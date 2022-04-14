@@ -7,7 +7,7 @@ class TextInputProcessor{
   int counter = 0, ptr = 0;
   float ANG_THRESHOLD = 1.0; // TODO CHANGE THIS
   int last_update = 0;
-  int TIMEOUT = 50;
+  int TIMEOUT = 100;
   Button button = Button(0);
   
   public:
@@ -29,8 +29,8 @@ class TextInputProcessor{
         if (x < 0) counter --;
         counter = (counter + CHAR_COUNT) % CHAR_COUNT;
       }
-      current[ptr] = getChar(counter);
     }
+    current[ptr] = getChar(counter);
 
     int input = button.update();
     if (valid && input) {

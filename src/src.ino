@@ -69,14 +69,15 @@ const int REST = 0, PEAK = 1, VALLEY = 2;
 const double BASELINE = 11.7;
 const float ZOOM = 9.81; //for display (converts readings into m/s^2)...used for visualizing only
 int global_steps = 0;
+uint8_t LCD_PWM = 0, LCD_CONTROL = 21;
 
 
 void setup() {
   tft.init();  //init screen
   tft.setRotation(2); //adjust rotation
   tft.setTextSize(1); //default font size
-  tft.fillScreen(TFT_BLACK); //fill background
-  tft.setTextColor(TFT_GREEN, TFT_BLACK); //set color of font to green foreground, black background
+  tft.fillScreen(TFT_WHITE); //fill background
+  tft.setTextColor(TFT_PURPLE, TFT_WHITE); //set color of font to green foreground, black background
   Serial.begin(115200); //begin serial comms
   delay(100); //wait a bit (100 ms)
   Wire.begin();
@@ -134,6 +135,7 @@ void setup() {
   }
 
   textInput = TextInputProcessor(BUTTON1);
+  pinMode(LCD_CONTROL, OUTPUT);
 }
 
 
@@ -154,22 +156,24 @@ void loop() {
 
   //get button readings:
 
-  int16_t gyroData[3];
-  imu.readGyroData(gyroData);
+  int16_t data[3];
+  imu.readAccelData(data);//readGyroData(data);
   float x, y, z, ZOOM = 9.8;
-  x = ZOOM * gyroData[0] * imu.aRes;
-  y = ZOOM * gyroData[1] * imu.aRes;
-  z = ZOOM * gyroData[2] * imu.aRes;
+  x = ZOOM * data[0] * imu.aRes;
+  y = ZOOM * data[1] * imu.aRes;
+  z = ZOOM * data[2] * imu.aRes;
   Serial.println(x);
   textInput.update(x);
   if (textInput.isValid()) {
-    sprintf(output, "%s", textInput.getText());
+    sprintf(output, "%s     ", textInput.getText());
   } else {
-    sprintf(output, "%s", textInput.getCurrentText());
+    sprintf(output, "%s     ", textInput.getCurrentText());
   }
 
+  Serial.println(textInput.isValid());
+  Serial.println(textInput.getCurrentText());
   if (strcmp(output, old_output)) {
-      tft.setCursor(0, 0, 1);
+      tft.setCursor(0, 0, 4);
       tft.println(output);
       memcpy(old_output, output, sizeof(output));
   }
