@@ -18,6 +18,7 @@ def get_credentials(username, password):
         return c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
 
 def update_passcodes(username, password, data):
+    # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
     if not authenticate_login(username, password):
         return "Failed"
     with sqlite3.connect(database) as c:
