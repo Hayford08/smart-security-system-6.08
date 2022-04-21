@@ -42,6 +42,9 @@ def do_post_request(url, username, password, message_to_display=None):
             c.execute("""CREATE TABLE IF NOT EXISTS session_info (user_hash real, username text, password text);""")
             c.execute("""INSERT INTO session_info (user_hash, username, password) VALUES (?, ?, ?);""", (user_hash, username, password))
 
+        output = f'''<!DOCTYPE html>
+        <html>
+        <body>'''
 
         if message_to_display:
             output += f'''<p style= "color:red;"> {message_to_display}</p>'''
@@ -148,4 +151,3 @@ def error_login_form():
             </body>
         </html>
         '''
-
