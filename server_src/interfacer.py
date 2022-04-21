@@ -6,8 +6,10 @@ import uuid
 import sys
 
 sys.path.append('/var/jail/home/team26/server_src/')
-from authentication import authenticate_login, get_credentials
+from authentication import authenticate_login, get_credentials, update_passcodes
 
+# create session database
+session_db = '/var/jail/home/team26/test/session.db'
 
 def get_id():
     """
@@ -15,12 +17,20 @@ def get_id():
     """
     return hash(uuid.UUID(int=uuid.getnode()))
 
-
-# create session database 
-session_db = '/var/jail/home/team26/test/session.db'
 user_hash = get_id()
 
-def do_post_request(url, username, password):
+def get_user_info_from_session():
+    """
+    This function returns the user's username and password from the session database
+    """
+    user_info = None
+    with sqlite3.connect(session_db) as c:
+        c.execute("""CREATE TABLE IF NOT EXISTS session_info (user_hash real, username text, password text);""")
+        user_info = c.execute("""SELECT username, password FROM session_info WHERE user_hash = ?;""", (user_hash,)).fetchone()
+    return user_info
+
+
+def do_post_request(url, username, password, message_to_display=None):
     raw_data = get_credentials(username, password)
     data={'username': username, 'password': password}
     #r = requests.post(url, data)
@@ -32,10 +42,11 @@ def do_post_request(url, username, password):
             c.execute("""CREATE TABLE IF NOT EXISTS session_info (user_hash real, username text, password text);""")
             c.execute("""INSERT INTO session_info (user_hash, username, password) VALUES (?, ?, ?);""", (user_hash, username, password))
 
-        return f'''<!DOCTYPE html>
-        <html>
-            <body>
-            <h2> Welcome {data["username"]}</h2>
+
+        if message_to_display:
+            output += f'''<p style= "color:red;"> {message_to_display}</p>'''
+
+        output += f'''<h2> Welcome {data["username"]}</h2>
             <h3> Today's Credentials are:</h3>
             <ul>
             <li> Passcode: {raw_data[1]} </li>
@@ -43,6 +54,10 @@ def do_post_request(url, username, password):
 
             <br>
             <form method = "post">
+                <label for="new_password">Enter new passcode: </label><br>
+                <input type="text" id="new_password" name="new_password"><br>
+                <input type="submit" value="Submit" name="submit_new_password">
+                <br><br>
                 <input type="submit" value="Logout" name="logout">
             </form>
 
@@ -50,6 +65,7 @@ def do_post_request(url, username, password):
             </body>
         </html>
         '''
+        return output
     except:
         return None
 
@@ -66,10 +82,19 @@ def request_handler(request):
             return login_form()
         except:
             try:
-                username = data["username"] = request["form"]["username"]
-                password = data["password"] = request["form"]["password"]
+                # check if it is a change password
+                new_password = request['form']['new_password']
+                username, password = get_user_info_from_session()
+                data = {"pincode": new_password}
+                change_message = update_passcodes(username, password, data)
+                return do_post_request(send_to, username, password, change_message)
             except:
-                return -1
+                # User just logged in
+                try:
+                    username = data["username"] = request["form"]["username"]
+                    password = data["password"] = request["form"]["password"]
+                except:
+                    return -1
 
             if not authenticate_login(username, password):
                 return error_login_form()
@@ -77,17 +102,14 @@ def request_handler(request):
 
     # Request is a get
     # check if there is a session for this user
-    user_info = None
-    with sqlite3.connect(session_db) as c:
-        c.execute("""CREATE TABLE IF NOT EXISTS session_info (user_hash real, username text, password text);""")
-        user_info = c.execute("""SELECT user_hash, username, password FROM session_info WHERE user_hash = ?;""", (user_hash,)).fetchone()
-            
-    # Found a session 
+    user_info = get_user_info_from_session()
+
+    # Found a session
     if user_info:
-        username, password = user_info[1], user_info[2]
+        username, password = user_info[0], user_info[1]
         return do_post_request(send_to, username, password)
 
-    # Ask user to fill login form 
+    # Ask user to fill login form
     return login_form()
 
 def login_form():
@@ -127,30 +149,3 @@ def error_login_form():
         </html>
         '''
 
-
-
-
-
-
-
-"""
-f'''<!DOCTYPE html>
-        <html>
-            <body>
-            <h2> Welcome {data["username"]}</h2>
-            <h3> Today's Credentials are :</h3>
-            <ul>
-            <li> Voice Activation Passcode : {response_data["voice_passcode"]} </li>
-            <li> Gesture Passcode : {response_data["gesture_passcode"]} </li>
-            <li> Pin Passcode : {response_data["pin_passcode"]} </li>
-
-            <br>
-            <form method = "post">
-                <input type="submit" value="Logout" name="logout">
-            </form>
-
-            </ul>
-            </body>
-        </html>
-        '''
-"""
