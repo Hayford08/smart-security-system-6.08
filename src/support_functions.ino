@@ -17,6 +17,15 @@ uint8_t char_append(char* buff, char c, uint16_t buff_size) {
         return true;
 }
 
+void to_lower(char* input, char* output) {
+  for (char* chr_ptr = input; *chr_ptr != 0; chr_ptr++) {
+    *output = ('A' <= *chr_ptr && *chr_ptr < 'Z')? *chr_ptr + 32: *chr_ptr;
+    output++;
+  }
+
+  *output = 0;
+}
+
 /*----------------------------------
  * do_http_request Function:
  * Arguments:

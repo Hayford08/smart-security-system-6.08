@@ -6,6 +6,8 @@
 #include <math.h>
 #include "button.h"
 #include "text_input.h"
+#include "card_scanner.h"
+#include "door.h"
 
 TFT_eSPI tft = TFT_eSPI();  // Invoke library, pins defined in User_Setup.h
 
@@ -49,12 +51,18 @@ const uint8_t BUTTON1 = 45; //pin connected to button
 const uint8_t BUTTON2 = 39; //pin connected to button
 MPU6050 imu; //imu object called, appropriately, imu
 
-Button button1, button2;
+Button button1(BUTTON1), button2(BUTTON2);
 TextInputProcessor textInput;
+CardScanner scanner;
+Door door;
 
 //some suggested variables you can use or delete:
 
-uint8_t state;  //system state for step counting
+enum Stage {
+  LOCKED, TAP, TEXT, UNLOCKED
+};
+
+Stage state = LOCKED;
 uint8_t post_state = 1; //state of posting
 int steps;
 
@@ -134,12 +142,14 @@ void setup() {
     ESP.restart(); // restart the ESP (proper way)
   }
 
+  scanner.setup();
+  door.setup();
+
   textInput = TextInputProcessor(BUTTON1);
   pinMode(LCD_CONTROL, OUTPUT);
+
+
 }
-
-
-
 
 void loop() {
   //get IMU information:
@@ -156,29 +166,83 @@ void loop() {
 
   //get button readings:
 
-  int16_t data[3];
-  imu.readAccelData(data);//readGyroData(data);
-  float x, y, z, ZOOM = 9.8;
-  x = ZOOM * data[0] * imu.aRes;
-  y = ZOOM * data[1] * imu.aRes;
-  z = ZOOM * data[2] * imu.aRes;
-  Serial.println(x);
-  textInput.update(x);
-  if (textInput.isValid()) {
-    sprintf(output, "%s     ", textInput.getText());
-  } else {
-    sprintf(output, "%s     ", textInput.getCurrentText());
-  }
-
-  Serial.println(textInput.isValid());
-  Serial.println(textInput.getCurrentText());
-  if (strcmp(output, old_output)) {
-      tft.setCursor(0, 0, 4);
-      tft.println(output);
-      memcpy(old_output, output, sizeof(output));
-  }
+  security_system_fsm();
+  update_lcd();
 
   while (millis() - primary_timer < LOOP_PERIOD); //wait for primary timer to increment
   primary_timer = millis();
 
+}
+
+void security_system_fsm() {
+  switch(state) {
+    case LOCKED:
+      state = TAP;
+      sprintf(output, "LOCKED");
+      textInput = TextInputProcessor(BUTTON1);
+      break;
+    
+    case TAP: // Tap Card
+      scanner.loop();
+      sprintf(output, "Please Tap Card");
+      if (scanner.accessAuthorized) {
+        Serial.println("access granted");
+        scanner.reset();
+        state = TEXT;
+      }
+      break;
+    
+    case TEXT: // Enter text with imu
+      // Read imu data
+      int16_t data[3];
+      imu.readAccelData(data);//readGyroData(data);
+      float x, y, z;
+      x = ZOOM * data[0] * imu.aRes;
+      y = ZOOM * data[1] * imu.aRes;
+      z = ZOOM * data[2] * imu.aRes;
+      
+      // Update textInput
+      Serial.println(x);
+      textInput.update(x);
+      if (textInput.isValid()) {
+        sprintf(output, "%s     ", textInput.getText());
+      } else {
+        sprintf(output, "%s     ", textInput.getCurrentText());
+      }
+
+      Serial.println(textInput.isValid());
+      Serial.println(textInput.getCurrentText());
+
+      // If the text is a hardcoded "enter", unlock the door
+
+      //char lower[100];
+      //to_lower(textInput.getCurrentText(), lower);
+      
+      if (strcmp(textInput.getCurrentText(), "ENTER") == 0) {
+        state = UNLOCKED;
+        door.open_door();
+      }
+      break;
+
+    case UNLOCKED:
+      // If button 2 is pressed, lock the door
+      Serial.println("unlocked");
+      sprintf(output, "unlocked");
+      if (button2.update() != 0) {
+        sprintf(output, "locking    ");
+        Serial.println("locking");
+        state = LOCKED;
+        door.close_door();
+      }
+      break;
+  }
+}
+
+void update_lcd() {
+  if (strcmp(output, old_output)) {
+    tft.fillScreen(TFT_WHITE); //fill background
+    tft.setCursor(0, 0, 4);
+    tft.println(output);
+    memcpy(old_output, output, sizeof(output));
+  }
 }
