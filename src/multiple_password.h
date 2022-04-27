@@ -28,20 +28,23 @@ private:
     char response_buffer[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP response
     char body[100];                        // for body
     authentification_method auth = CARDID; // default
+    char username[100];
+    bool is_auth_valid = False;
+
 public:
-    void post_request_authentification(char *card_id, char *user_input)
+    void post_request_authentification(char *username, char *user_input)
     {
         // GENERATE BODY JSON
         switch (auth)
         {
         case CARDID:
-            sprintf(body, "{\"card_id\":\"%s\"}", card_id);
+            sprintf(body, "{\"card_id\":\"%s\"}", user_input);
             break;
         case PINCODE:
-            sprintf(body, "{\"card_id\":\"%s\",\"pincode\":\"%s\"}", card_id, user_input);
+            sprintf(body, "{\"username\":\"%s\",\"pincode\":\"%s\"}", username, user_input);
             break;
         case PHRASE:
-            sprintf(body, "{\"card_id\":\"%s\",\"phrase\":\"%s\"}", card_id, user_input);
+            sprintf(body, "{\"username\":\"%s\",\"phrase\":\"%s\"}", username, user_input);
             break;
         default:
             break;
@@ -56,5 +59,18 @@ public:
         strcat(request_buffer, "\r\n");                                                       // new line
         Serial.println(request_buffer);
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+        switch (auth)
+        {
+        case CARDID:
+            username = response_buffer; // response should be smth like username if this card_id exists + if a person can access the door
+            break;
+        default:
+            break;
+        }
+        is_auth_valid = response_buffer; // somehow
+    }
+    void set_auth_method(authentification_method new_auth_method)
+    { // to be able to request another authentification method
+        auth = new_auth_method;
     }
 }
