@@ -46,15 +46,14 @@ def checkAccess(username, door_id):
         c.execute("""SELECT * FROM door_user_table WHERE username = ? AND door_id = ?""", (username, door_id)).fetchone() != None
         
 
-def update_passcodes(username, password, data):
+def update_credentials(username, password, data):
     # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
-    if not authenticate_login(username, password):
-        return "Failed"
     with sqlite3.connect(database) as c:
         object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
         if "pincode" not in data:
             data["pincode"] = object[2]
-        c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data["pincode"], username, password)).fetchone()
+        c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
+        c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
     return "Password Updated Successfully"
 
 def request_handler(request):

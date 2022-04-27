@@ -79,16 +79,6 @@ def request_handler(request):
             delete_user_session(user_hash)
             return login_form()
         except:
-            try:
-                # check if it is a change password
-                new_password = request['form']['new_password']
-                username, password = get_user_info_from_session(user_hash)
-                data = {"pincode": new_password}
-                change_message = update_passcodes(username, password, data)
-                return do_post_request(username, password, change_message)
-            except:
-                pass
-
             if not user_info: # Ignore login requests when the user is already logged in
                 username = data["username"] = request["form"]["username"]
                 password = data["password"] = request["form"]["password"]
