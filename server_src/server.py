@@ -3,7 +3,7 @@ import requests
 import sqlite3
 import json
 
-proj_db = '/var/jail/home/team26/project.db' #assumes you have a la07a dir in your home dir
+proj_db = '/var/jail/home/team26/project.db' 
 seconds_in_day = 24 * 60 * 60
 
 def request_handler(request):
