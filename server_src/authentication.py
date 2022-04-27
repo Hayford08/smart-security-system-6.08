@@ -34,6 +34,11 @@ def retrieve_username(card_id):
         if object != None:
             return object[0]
         return None
+    
+def get_authentication_methods(username):
+    with sqlite3.connect(database) as c:
+        object = c.execute("""SELECT * FROM users WHERE username = ?""", (username)).fetchone()
+        return 'password=' + str(object[1] != '') + '\npincode=' + str(object[2] != '') + '\n'
 
 def update_passcodes(username, password, data):
     # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
@@ -49,6 +54,8 @@ def update_passcodes(username, password, data):
 def request_handler(request):
     # Supports:
     #       ?getUsername&card_id=<card_id> => returns the username of the user
+    #       ?getAuthenticationMethods&username=<username> => returns the list of authentication methods the user is using
+    #                                                           as: "password=<True/False>\npincode=<True/False>\n"
     #       ?authenticate&username=<username>&password=<password> => returns true if the password matches the username
     #       ?authenticate&username=<username>&pincode=<pincode> => returns true if the pincode matches the username
     #       => returns "Unsupported Request" otherwise
@@ -56,8 +63,11 @@ def request_handler(request):
         if 'getUsername' in request['args']:
             card_id = request['values']['card_id']
             return retrieve_username(card_id)
+        elif 'getAuthenticationMethods' in request['args']:
+            username = request['values']['username']
+            return get_authentication_methods(username)
 
-        if 'authenticate' in request['args']:
+        elif 'authenticate' in request['args']:
             username = request['values']['username']
             if request['values']['type'] == 'password':
                 password = request['values']['password']
