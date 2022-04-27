@@ -90,7 +90,7 @@ def request_handler(request):
 
     # Request is a get
     # check if there is a session for this user
-    user_info = get_user_info_from_session(user_hash)
+    user_info = get_user_info_from_session()
 
     # Found a session
     if user_info:

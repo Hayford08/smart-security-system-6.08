@@ -42,6 +42,8 @@ def request_handler(request):
             pass
     return False
 
+
+#TODO -- Next week???
 # def update_isadmin(username, value):
 #     """
 #     This function updates the user's admin status
