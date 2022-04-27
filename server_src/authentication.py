@@ -2,6 +2,7 @@ import sqlite3
 
 from matplotlib.style import use
 from requests import NullHandler
+from sympy import re
 
 
 database = '/var/jail/home/team26/server_src/database.db'
@@ -40,6 +41,11 @@ def get_authentication_methods(username):
         object = c.execute("""SELECT * FROM users WHERE username = ?""", (username)).fetchone()
         return 'password=' + str(object[1] != '') + '\npincode=' + str(object[2] != '') + '\n'
 
+def checkAccess(username, door_id):
+    with sqlite3.connect(database) as c:
+        c.execute("""SELECT * FROM door_user_table WHERE username = ? AND door_id = ?""", (username, door_id)).fetchone() != None
+        
+
 def update_passcodes(username, password, data):
     # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
     if not authenticate_login(username, password):
@@ -53,14 +59,27 @@ def update_passcodes(username, password, data):
 
 def request_handler(request):
     # Supports:
+    #       ?checkAccess&username=<username>&door_id=<door_id> => returns True if the user has access to the door, False otherwise
+    #       ?checkAccess&card_id=<card_id>&door_id=<door_id> => returns True if the user with the given card_id has access to the door, False otherwise
+
     #       ?getUsername&card_id=<card_id> => returns the username of the user
+
     #       ?getAuthenticationMethods&username=<username> => returns the list of authentication methods the user is using
     #                                                           as: "password=<True/False>\npincode=<True/False>\n"
+
     #       ?authenticate&username=<username>&password=<password> => returns true if the password matches the username
     #       ?authenticate&username=<username>&pincode=<pincode> => returns true if the pincode matches the username
     #       => returns "Unsupported Request" otherwise
     if request['method'] == 'GET':
-        if 'getUsername' in request['args']:
+        if 'checkAccess' in request['args']:
+            door_id = request['values']['door_id']
+            if 'username' in request['values']:
+                username = request['values']['username']
+            elif 'card_id' in request['values']:
+                username = retrieve_username(request['values']['card_id'])
+            return checkAccess(username, door_id)
+
+        elif 'getUsername' in request['args']:
             card_id = request['values']['card_id']
             return retrieve_username(card_id)
         elif 'getAuthenticationMethods' in request['args']:
