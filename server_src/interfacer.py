@@ -87,17 +87,14 @@ def request_handler(request):
                 change_message = update_passcodes(username, password, data)
                 return do_post_request(username, password, change_message)
             except:
-                # User just logged in
-                try:
-                    username = data["username"] = request["form"]["username"]
-                    password = data["password"] = request["form"]["password"]
-                except:
-                    if not user_info:
-                        return -1
+                pass
 
-            if not authenticate_login(username, password):
-                return error_login_form()
-            return do_post_request(username, password)
+            if not user_info: # Ignore login requests when the user is already logged in
+                username = data["username"] = request["form"]["username"]
+                password = data["password"] = request["form"]["password"]
+                if not authenticate_login(username, password):
+                    return error_login_form()
+                return do_post_request(username, password)
 
     # Request is a get
     # check if there is a session for this user
