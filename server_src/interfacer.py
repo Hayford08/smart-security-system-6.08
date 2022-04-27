@@ -7,54 +7,22 @@ import sys
 
 sys.path.append('/var/jail/home/team26/server_src/')
 from authentication import authenticate_login, get_credentials, update_passcodes
+from database_request import get_id, get_user_door_access, get_user_info_from_session, create_user_session, delete_user_session
 
 # session database
 session_db = '/var/jail/home/team26/server_src/session.db'
 
-# door access database
-door_access_db = '/var/jail/home/team26/server_src/door_access.db'
-
-def get_id():
-    """
-    This function returns the unique id for the computer the user uses
-    """
-    return hash(uuid.UUID(int=uuid.getnode()))
-
-user_hash = get_id()
-
-def get_user_info_from_session():
-    """
-    This function returns the user's username and password from the session database
-    """
-    user_info = None
-    with sqlite3.connect(session_db) as c:
-        c.execute("""CREATE TABLE IF NOT EXISTS session_info (user_hash real, username text, password text);""")
-        user_info = c.execute("""SELECT username, password FROM session_info WHERE user_hash = ?;""", (user_hash,)).fetchone()
-    return user_info
-
-def get_user_door_access(username):
-    """
-    This function takes in a username and returns all the doors that the user has access to
-    """
-    door_data = []
-    with sqlite3.connect(door_access_db) as c:
-        door_data = c.execute('''SELECT door_id FROM door_user_table WHERE username = ?;''', (username,)).fetchall()
-
-    door_list = ""
-    for door_id in door_data:
-        door_list += "<li> Door " + str(door_id[0]) + "</li>"
-    return door_list
-
 def do_post_request(url, username, password, message_to_display=None):
+    user_hash = get_id()
     raw_data = get_credentials(username, password)
     data={'username': username, 'password': password}
     try:
-        # create database for session retrieval if it's not already created
-        with sqlite3.connect(session_db) as c:
-            c.execute("""CREATE TABLE IF NOT EXISTS session_info (user_hash real, username text, password text);""")
-            c.execute("""INSERT INTO session_info (user_hash, username, password) VALUES (?, ?, ?);""", (user_hash, username, password))
-        
+        # Create a session for current log in 
+        create_user_session(user_hash, username, password)
+
+        # Doors this users have access 
         user_door_access = get_user_door_access(username)
+
         output = f'''<!DOCTYPE html>
         <html>
         <body>'''
@@ -86,9 +54,8 @@ def do_post_request(url, username, password, message_to_display=None):
         </html>
         '''
         return output
-    except Exception as e:
-        return e
-        #return None
+    except:
+        return None
 
 def request_handler(request):
     send_to = "https://608dev-2.net/sandbox/sc/team26/server_src/server.py"
@@ -98,14 +65,14 @@ def request_handler(request):
         # check if it is log out
         try:
             logout = request["form"]["logout"]
-            with sqlite3.connect(session_db) as c:
-                c.execute("DELETE FROM session_info WHERE user_hash = ?;""", (user_hash,))
+            # remove user session
+            delete_user_session(user_hash)
             return login_form()
         except:
             try:
                 # check if it is a change password
                 new_password = request['form']['new_password']
-                username, password = get_user_info_from_session()
+                username, password = get_user_info_from_session(user_hash)
                 data = {"pincode": new_password}
                 change_message = update_passcodes(username, password, data)
                 return do_post_request(send_to, username, password, change_message)
