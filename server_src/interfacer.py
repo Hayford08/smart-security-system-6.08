@@ -13,7 +13,7 @@ from forms import login_form, error_login_form
 # session database
 session_db = '/var/jail/home/team26/server_src/session.db'
 
-def do_post_request(url, username, password, message_to_display=None):
+def do_post_request(username, password, message_to_display=None):
     user_hash = get_id()
     raw_data = get_credentials(username, password)
     data={'username': username, 'password': password}
@@ -59,7 +59,6 @@ def do_post_request(url, username, password, message_to_display=None):
         return None
 
 def request_handler(request):
-    send_to = "https://608dev-2.net/sandbox/sc/team26/server_src/server.py"
     data={}
     user_hash = get_id()
     if request["method"]=="POST":
@@ -76,7 +75,7 @@ def request_handler(request):
                 username, password = get_user_info_from_session(user_hash)
                 data = {"pincode": new_password}
                 change_message = update_passcodes(username, password, data)
-                return do_post_request(send_to, username, password, change_message)
+                return do_post_request(username, password, change_message)
             except:
                 # User just logged in
                 try:
@@ -87,7 +86,7 @@ def request_handler(request):
 
             if not authenticate_login(username, password):
                 return error_login_form()
-            return do_post_request(send_to, username, password)
+            return do_post_request(username, password)
 
     # Request is a get
     # check if there is a session for this user
@@ -96,7 +95,7 @@ def request_handler(request):
     # Found a session
     if user_info:
         username, password = user_info[0], user_info[1]
-        return do_post_request(send_to, username, password)
+        return do_post_request(username, password)
 
     # Ask user to fill login form
     return login_form()
