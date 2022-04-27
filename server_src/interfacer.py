@@ -69,6 +69,8 @@ def do_post_request(username, password, message_to_display=None):
 def request_handler(request):
     data={}
     user_hash = get_id()
+    user_info = get_user_info_from_session(user_hash)
+
     if request["method"]=="POST":
         # check if it is log out
         try:
@@ -90,7 +92,8 @@ def request_handler(request):
                     username = data["username"] = request["form"]["username"]
                     password = data["password"] = request["form"]["password"]
                 except:
-                    return -1
+                    if not user_info:
+                        return -1
 
             if not authenticate_login(username, password):
                 return error_login_form()
