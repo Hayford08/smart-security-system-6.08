@@ -91,7 +91,7 @@ def request_handler(request):
 
     # Request is a get
     # check if there is a session for this user
-    user_info = get_user_info_from_session()
+    user_info = get_user_info_from_session(user_hash)
 
     # Found a session
     if user_info:
