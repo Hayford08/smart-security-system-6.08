@@ -1,5 +1,8 @@
 import sqlite3
 
+from matplotlib.style import use
+from requests import NullHandler
+
 
 database = '/var/jail/home/team26/server_src/database.db'
 def setup():
@@ -25,6 +28,13 @@ def get_credentials(username, password):
     with sqlite3.connect(database) as c:
         return c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
 
+def retrieve_username(card_id):
+    with sqlite3.connect(database) as c:
+        object = c.execute("""SELECT * FROM users WHERE card_id = ?""", (card_id)).fetchone()
+        if object != None:
+            return object[0]
+        return None
+
 def update_passcodes(username, password, data):
     # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
     if not authenticate_login(username, password):
@@ -37,8 +47,17 @@ def update_passcodes(username, password, data):
     return "Password Updated Successfully"
 
 def request_handler(request):
+    # Supports:
+    #       ?getUsername&card_id=<card_id> => returns the username of the user
+    #       ?authenticate&username=<username>&password=<password> => returns true if the password matches the username
+    #       ?authenticate&username=<username>&pincode=<pincode> => returns true if the pincode matches the username
+    #       => returns "Unsupported Request" otherwise
     if request['method'] == 'GET':
-        try:
+        if 'getUsername' in request['args']:
+            card_id = request['values']['card_id']
+            return retrieve_username(card_id)
+
+        if 'authenticate' in request['args']:
             username = request['values']['username']
             if request['values']['type'] == 'password':
                 password = request['values']['password']
@@ -46,9 +65,8 @@ def request_handler(request):
             elif request['values']['type'] == 'pincode':
                 pincode = request['values']['pincode']
                 return authenticate_pincode(username, pincode)
-        except:
-            pass
-    return False
+            return False
+    return "Unsupported Request"
 
 
 #TODO -- Next week???
