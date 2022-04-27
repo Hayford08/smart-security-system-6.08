@@ -9,7 +9,7 @@ sys.path.append('/var/jail/home/team26/server_src/')
 from authentication import authenticate_login, get_credentials, update_passcodes
 
 # create session database
-session_db = '/var/jail/home/team26/test/session.db'
+session_db = '/var/jail/home/team26/server_src/session.db'
 
 def get_id():
     """
@@ -69,11 +69,12 @@ def do_post_request(url, username, password, message_to_display=None):
         </html>
         '''
         return output
-    except:
-        return None
+    except Exception as e:
+        return e
+        #return None
 
 def request_handler(request):
-    send_to = "https://608dev-2.net/sandbox/sc/team26/test/server.py"
+    send_to = "https://608dev-2.net/sandbox/sc/team26/server_src/server.py"
     data={}
     user_hash = get_id()
     if request["method"]=="POST":
