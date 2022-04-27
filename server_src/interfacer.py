@@ -7,7 +7,7 @@ import sys
 
 sys.path.append('/var/jail/home/team26/server_src/')
 from authentication import authenticate_login, get_credentials, update_passcodes
-from database_request import get_id, get_user_door_access, get_user_info_from_session, create_user_session, delete_user_session
+from database_request import get_id, get_user_door_access, get_user_info_from_session, create_user_session, delete_user_session, check_admin
 from forms import login_form, error_login_form
 
 # session database
@@ -30,7 +30,6 @@ def do_post_request(username, password, message_to_display=None):
 
         if message_to_display:
             output += f'''<p style= "color:red;"> {message_to_display}</p>'''
-
         output += f'''<h2> Welcome {data["username"]}</h2>
             <h3> Door(s) you have access to: </h3> 
             <ul>
@@ -39,8 +38,7 @@ def do_post_request(username, password, message_to_display=None):
             <h3> Today's Credentials are:</h3>
 
             <li> Passcode: {raw_data[1]} </li>
-            <li> Pincode: {raw_data[2]} </li>
-
+            <li> Pincode: {raw_data[2]} </li> 
             <br>
             <form method = "post">
                 <label for="new_password">Enter new passcode: </label><br>
@@ -48,11 +46,21 @@ def do_post_request(username, password, message_to_display=None):
                 <input type="submit" value="Submit" name="submit_new_password">
                 <br><br>
                 <input type="submit" value="Logout" name="logout">
-            </form>
-
+            </form> 
             </ul>
+            '''
+        if check_admin(username):
+            output+='''
+            <form method="post" action = "admin.py">
+            <input type="submit" value="Click to enter Admin Mode", name=admin>
+            </form>
             </body>
         </html>
+        '''
+        else:
+            output+='''
+             </body>
+            </html>
         '''
         return output
     except:
@@ -90,7 +98,7 @@ def request_handler(request):
 
     # Request is a get
     # check if there is a session for this user
-    user_info = get_user_info_from_session()
+    user_info = get_user_info_from_session(user_hash)
 
     # Found a session
     if user_info:

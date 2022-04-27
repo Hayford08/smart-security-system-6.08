@@ -11,6 +11,9 @@ session_db = '/var/jail/home/team26/server_src/session.db'
 # door access database
 door_access_db = '/var/jail/home/team26/server_src/door_access.db'
 
+# users database
+database = '/var/jail/home/team26/server_src/database.db'
+
 def get_id():
     """
     This function returns the unique id for the computer the user uses
@@ -54,3 +57,7 @@ def delete_user_session(user_hash):
     """
     with sqlite3.connect(session_db) as c:
         c.execute("DELETE FROM session_info WHERE user_hash = ?;""", (user_hash,))
+
+def check_admin(username):
+    with sqlite3.connect(database) as c:
+        return c.execute("""SELECT * from users WHERE username = ? AND is_admin = ? """, (username, 1)).fetchone()!=None
