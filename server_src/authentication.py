@@ -17,6 +17,10 @@ def authenticate_login(username, password):
     with sqlite3.connect(database) as c:
         return c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone() != None
 
+def authenticate_pincode(username, pincode):
+    with sqlite3.connect(database) as c:
+        return c.execute("""SELECT * FROM users WHERE username = ? AND pincode = ?""", (username, pincode)).fetchone() != None
+
 def get_credentials(username, password):
     with sqlite3.connect(database) as c:
         return c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
@@ -36,8 +40,12 @@ def request_handler(request):
     if request['method'] == 'GET':
         try:
             username = request['values']['username']
-            password = request['values']['password']
-            return authenticate_login(username, password)
+            if request['values']['type'] == 'password':
+                password = request['values']['password']
+                return authenticate_login(username, password)
+            elif request['values']['type'] == 'pincode':
+                pincode = request['values']['pincode']
+                return authenticate_pincode(username, pincode)
         except:
             pass
     return False
