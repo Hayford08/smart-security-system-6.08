@@ -12,6 +12,7 @@
 
 enum authentification_method
 {
+    GETUSERNAME,
     PINCODE,
     CARDID,
     PHRASE
@@ -20,14 +21,14 @@ enum authentification_method
 class MultiplePassword
 {
 private:
-    const int RESPONSE_TIMEOUT = 6000;     // ms to wait for response from host
-    const int POSTING_PERIOD = 6000;       // periodicity of getting a number fact.
-    const uint16_t IN_BUFFER_SIZE = 1000;  // size of buffer to hold HTTP request
-    const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
-    char request_buffer[IN_BUFFER_SIZE];   // char array buffer to hold HTTP request
-    char response_buffer[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP response
-    char body[100];                        // for body
-    authentification_method auth = CARDID; // default
+    const int RESPONSE_TIMEOUT = 6000;          // ms to wait for response from host
+    const int POSTING_PERIOD = 6000;            // periodicity of getting a number fact.
+    const uint16_t IN_BUFFER_SIZE = 1000;       // size of buffer to hold HTTP request
+    const uint16_t OUT_BUFFER_SIZE = 1000;      // size of buffer to hold HTTP response
+    char request_buffer[IN_BUFFER_SIZE];        // char array buffer to hold HTTP request
+    char response_buffer[OUT_BUFFER_SIZE];      // char array buffer to hold HTTP response
+    char body[100];                             // for body
+    authentification_method auth = GETUSERNAME; // default
     char username[100];
     bool is_auth_valid = False;
 
@@ -37,14 +38,17 @@ public:
         // GENERATE BODY JSON
         switch (auth)
         {
+        case GETUSERNAME:
+            sprintf(body, "{\"getUsername\",\"card_id\":\"%s\"}", user_input);
+            break;
         case CARDID:
-            sprintf(body, "{\"card_id\":\"%s\"}", user_input);
+            sprintf(body, "{\"authenticate\",\"type\":\"card_id\",\"card_id\":\"%s\"}", user_input);
             break;
         case PINCODE:
-            sprintf(body, "{\"username\":\"%s\",\"pincode\":\"%s\"}", username, user_input);
+            sprintf(body, "{\"authenticate\",\"type\":\"pincode\",\"username\":\"%s\",\"pincode\":\"%s\"}", username, user_input);
             break;
         case PHRASE:
-            sprintf(body, "{\"username\":\"%s\",\"phrase\":\"%s\"}", username, user_input);
+            sprintf(body, "{\"authenticate\",\"type\":\"phrase\",\"username\":\"%s\",\"phrase\":\"%s\"}", username, user_input);
             break;
         default:
             break;
@@ -61,13 +65,13 @@ public:
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
         switch (auth)
         {
-        case CARDID:
+        case GETUSERNAME:
             username = response_buffer; // response should be smth like username if this card_id exists + if a person can access the door
             break;
         default:
+            is_auth_valid = response_buffer; // somehow
             break;
         }
-        is_auth_valid = response_buffer; // somehow
     }
     void set_auth_method(authentification_method new_auth_method)
     { // to be able to request another authentification method
