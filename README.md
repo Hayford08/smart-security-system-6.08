@@ -98,6 +98,27 @@ def get_user_info_from_session():
 
 The session is deleted when the user logs out of the website. In that case, the database clears the information associated with a particular user_id. This functionality was tested with different usernames and passwords and works as intended. Next thing to work on will be to have a separate page for changing the password.
 
+### Changing Profile Info
+Users can log in to the website and change their credentials (password, pincode, etc.).
+This is done in `profile.py` as follows:
+```python
+new_password = request['form']['new_password']
+new_pincode = request['form']['pincode']
+update_credentials(username, password, {'pincode': new_pincode, 'password': new_password})
+```
+The `update_credentials` function in `authentication.py` then connects to the database and update the information accordingly:
+```python
+def update_credentials(username, password, data):
+    # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
+    with sqlite3.connect(database) as c:
+        object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
+        if "pincode" not in data:
+            data["pincode"] = object[2]
+        c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
+        c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
+    return "Password Updated Successfully"
+```
+
 ### MultiplePasswords
 
 This class is designed to handle GET requests to the server. The type of request is exposed to the client by the `authentification_method`
