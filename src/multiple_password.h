@@ -13,8 +13,11 @@
 enum authentification_method
 {
     GETUSERNAME,
-    PINCODE,
+    AUTHMETHODS,
     CARDID,
+    CARDBYUSERNAME,
+    PINCODE,
+    PASSWORD,
     PHRASE
 };
 
@@ -33,7 +36,7 @@ private:
     bool is_auth_valid = False;
 
 public:
-    void post_request_authentification(char *username, char *user_input)
+    void post_request_authentification(char *username, char *user_input, int door_id = 1)
     {
         // GENERATE BODY JSON
         switch (auth)
@@ -41,11 +44,20 @@ public:
         case GETUSERNAME:
             sprintf(body, "{\"getUsername\",\"card_id\":\"%s\"}", user_input);
             break;
+        case AUTHMETHODS:
+            sprintf(body, "{\"getAuthenticationMethods\",\"username\":\"%s\"}", username);
+            break;
         case CARDID:
-            sprintf(body, "{\"authenticate\",\"type\":\"card_id\",\"card_id\":\"%s\"}", user_input);
+            sprintf(body, "{\"checkAccess\",\"type\":\"card_id\",\"card_id\":\"%s\",\"door_id\":\"%d\"}", user_input, door_id);
+            break;
+        case CARDBYUSERNAME:
+            sprintf(body, "{\"checkAccess\",\"type\":\"username\",\"username\":\"%s\",\"door_id\":\"%d\"}", user_input, door_id);
             break;
         case PINCODE:
             sprintf(body, "{\"authenticate\",\"type\":\"pincode\",\"username\":\"%s\",\"pincode\":\"%s\"}", username, user_input);
+            break;
+        case PASSWORD:
+            sprintf(body, "{\"authenticate\",\"type\":\"password\",\"username\":\"%s\",\"password\":\"%s\"}", username, user_input);
             break;
         case PHRASE:
             sprintf(body, "{\"authenticate\",\"type\":\"phrase\",\"username\":\"%s\",\"phrase\":\"%s\"}", username, user_input);
@@ -76,5 +88,9 @@ public:
     void set_auth_method(authentification_method new_auth_method)
     { // to be able to request another authentification method
         auth = new_auth_method;
+    }
+    char *get_username()
+    {
+        return username;
     }
 }
