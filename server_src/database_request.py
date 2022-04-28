@@ -116,3 +116,4 @@ def remove_door_access(username):
     """
     with sqlite3.connect(door_access_db) as c:
         c.execute("""DELETE FROM door_user_table where username = ?""", (username,))
+        
