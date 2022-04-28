@@ -8,7 +8,7 @@
 #include "text_input.h"
 #include "card_scanner.h"
 #include "door.h"
-#include "support_functions.ino"
+#include "support_functions.h"
 
 enum authentification_method
 {
@@ -36,7 +36,7 @@ private:
     bool is_auth_valid = False;
 
 public:
-    void post_request_authentification(char *username, char *user_input, int door_id = 1)
+    void post_request_authentification(char *user_input, int door_id = 1)
     {
         // GENERATE BODY JSON
         switch (auth)

@@ -8,7 +8,7 @@
 #include "text_input.h"
 #include "card_scanner.h"
 #include "door.h"
-#include "multiple_password.h"
+#include "multiple_password.ino"
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
@@ -56,6 +56,7 @@ Button button1(BUTTON1), button2(BUTTON2);
 TextInputProcessor textInput;
 CardScanner scanner;
 Door door;
+MultiplePassword multipass;
 
 // some suggested variables you can use or delete:
 
@@ -165,6 +166,7 @@ void setup()
 
   textInput = TextInputProcessor(BUTTON1);
   pinMode(LCD_CONTROL, OUTPUT);
+  multipass = MultiplePassword();
 }
 
 void loop()
@@ -203,6 +205,9 @@ void security_system_fsm()
   case TAP: // Tap Card
     scanner.loop();
     sprintf(output, "Please Tap Card");
+    Serial.printf("Id tapped: %s\n", scanner.newcard);
+    multipass.post_request_authentification(scanner.newcard);
+    Serial.println(multipass.get_username());
     if (scanner.accessAuthorized)
     {
       Serial.println("access granted");
