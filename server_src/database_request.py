@@ -116,3 +116,11 @@ def remove_door_access(username):
     """
     with sqlite3.connect(door_access_db) as c:
         c.execute("""DELETE FROM door_user_table where username = ?""", (username,))
+
+
+def door_access_setup():
+    """
+    This is the default assignment of random door access to Admin
+    """
+    with sqlite3.connect(door_access_db) as c:
+        pass

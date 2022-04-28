@@ -5,12 +5,13 @@ def setup():
     """
     This is the function to create the default usernames, passwords, pincodes, and is_admin in the database
     """
-    values = [('dkriezis', '8130070', '542071', 0), ('hayford', '5317558', '798333', 0), ("Admin", "Admin", "470236", 1),
-        ('vladap', '9466123', '670426', 0), ('muhender', '4616833', '057548', 0), ('mazaheri','8150042', '113312', 0)]
+    values = [('dkriezis', '8130070', '542071', 0, 'E0 16 99 1B'), ('hayford', '5317558', '798333', 0, '88 2B 47 E3'), 
+              ("Admin", "Admin", "470236", 1, 'AC EC 64 68'),  ('vladap', '9466123', '670426', 0, '63 E1 B3 31'), 
+              ('muhender', '4616833', '057548', 0, 'D3 CC 5F 6D'), ('mazaheri','8150042', '113312', 0, '06 A4 40 B7')]
     with sqlite3.connect(database) as c:
-        c.execute("""CREATE TABLE IF NOT EXISTS users (username text, password text, pincode text, is_admin integer);""")
+        c.execute("""CREATE TABLE IF NOT EXISTS users (username text, password text, pincode text, is_admin integer, card_id text);""")
         for tup in values:
-            c.execute("""INSERT INTO users (username, password, pincode, is_admin) VALUES (?,?,?,?)""", (tup[0], tup[1], tup[2], tup[3]))
+            c.execute("""INSERT INTO users (username, password, pincode, is_admin, card_id) VALUES (?,?,?,?,?)""", (tup[0], tup[1], tup[2], tup[3], tup[4]))
 
 def authenticate_login(username, password):
     with sqlite3.connect(database) as c:
@@ -26,7 +27,7 @@ def get_credentials(username, password):
 
 def retrieve_username(card_id):
     with sqlite3.connect(database) as c:
-        object = c.execute("""SELECT * FROM users WHERE card_id = ?""", (card_id)).fetchone()
+        object = c.execute("""SELECT * FROM users WHERE card_id = ?""", (card_id,)).fetchone()
         if object != None:
             return object[0]
         return None
