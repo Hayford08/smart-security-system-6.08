@@ -84,11 +84,8 @@ def request_handler(request):
                     return error_login_form()
                 return do_post_request(username, password)
 
-    # Request is a get
-    # check if there is a session for this user
-    user_info = get_user_info_from_session(user_hash)
-
-    # Found a session
+    # Request is a get 
+    # checking for a session
     if user_info:
         username, password = user_info[0], user_info[1]
         return do_post_request(username, password)
