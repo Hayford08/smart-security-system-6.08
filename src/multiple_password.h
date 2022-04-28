@@ -8,7 +8,7 @@
 #include "text_input.h"
 #include "card_scanner.h"
 #include "door.h"
-#include "support_functions.h"
+#include "support_functions.ino"
 
 enum authentification_method
 {
@@ -66,7 +66,7 @@ public:
             break;
         }
         int body_len = strlen(body); // calculate body length (for header reporting)
-        sprintf(request_buffer, "POST https://608dev-2.net/sandbox/sc/team26/server_src HTTP/1.1\r\n");
+        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src HTTP/1.1\r\n");
         strcat(request_buffer, "Host: 608dev-2.net\r\n");
         strcat(request_buffer, "Content-Type: application/json\r\n");
         sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n", body_len); // append string formatted to end of request buffer

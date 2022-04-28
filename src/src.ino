@@ -8,7 +8,7 @@
 #include "text_input.h"
 #include "card_scanner.h"
 #include "door.h"
-#include "multiple_password.ino"
+#include "multiple_password.h"
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
