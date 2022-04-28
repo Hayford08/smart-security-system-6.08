@@ -8,7 +8,7 @@
 #include "text_input.h"
 #include "card_scanner.h"
 #include "door.h"
-#include "support_functions.ino"
+// #include "support_functions.h"
 
 enum authentification_method
 {
