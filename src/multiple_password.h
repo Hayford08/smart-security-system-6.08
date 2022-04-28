@@ -69,14 +69,14 @@ public:
             break;
         }
         // int body_len = strlen(body); // calculate body length (for header reporting)
-        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authenticate.py%s HTTP/1.1\r\n", body);
+        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
         strcat(request_buffer, "Host: 608dev-2.net\r\n");
         // strcat(request_buffer, "Content-Type: application/json\r\n");
         // sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n", body_len); // append string formatted to end of request buffer
         // strcat(request_buffer, "\r\n");                                                       // new line from header to body
         // strcat(request_buffer, body);                                                         // body
         strcat(request_buffer, "\r\n");                                                       // new line
-        Serial.println(request_buffer);
+        // Serial.println(request_buffer);
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
         switch (auth)
         {
