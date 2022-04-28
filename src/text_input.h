@@ -1,3 +1,6 @@
+#ifndef TEXT_INPUT_H
+#define TEXT_INPUT_H
+
 //char CHARACTERS[26] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";//"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 class TextInputProcessor{
   private:
@@ -66,3 +69,5 @@ class TextInputProcessor{
     return getChar(counter);
   }
 };
+
+#endif // TEXT_INPUT_H

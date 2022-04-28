@@ -1,3 +1,8 @@
+#ifndef SUPPORT_FUNCTIONS_H
+#define SUPPORT_FUNCTIONS_H
+
+const uint16_t IN_BUFFER_SIZE = 1000;  // size of buffer to hold HTTP request
+const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
 
 /*----------------------------------
  * char_append Function:
@@ -67,4 +72,6 @@ void do_http_request(char* host, char* request, char* response, uint16_t respons
     if (serial) Serial.println("wait 0.5 sec...");
     client.stop();
   }
-}        
+}    
+
+#endif // SUPPORT_FUNCTIONS_H

@@ -1,14 +1,17 @@
-#include <WiFi.h>     //Connect to WiFi Network
-#include <TFT_eSPI.h> // Graphics and font library for ST7735 driver chip
-#include <SPI.h>      //Used in support of TFT Display
+#ifndef MULTIPLE_PASSWORD_H
+#define MULTIPLE_PASSWORD_H
+
+//#include <WiFi.h>     //Connect to WiFi Network
+//#include <TFT_eSPI.h> // Graphics and font library for ST7735 driver chip
+//#include <SPI.h>      //Used in support of TFT Display
 #include <string.h>   //used for some string handling and processing.
-#include <mpu6050_esp32.h>
-#include <math.h>
-#include "button.h"
-#include "text_input.h"
-#include "card_scanner.h"
-#include "door.h"
-// #include "support_functions.h"
+//#include <mpu6050_esp32.h>
+//#include <math.h>
+//#include "button.h"
+//#include "text_input.h"
+//#include "card_scanner.h"
+//#include "door.h"
+#include "support_functions.h"
 
 enum authentification_method
 {
@@ -26,14 +29,14 @@ class MultiplePassword
 private:
     const int RESPONSE_TIMEOUT = 6000;          // ms to wait for response from host
     const int POSTING_PERIOD = 6000;            // periodicity of getting a number fact.
-    const uint16_t IN_BUFFER_SIZE = 1000;       // size of buffer to hold HTTP request
-    const uint16_t OUT_BUFFER_SIZE = 1000;      // size of buffer to hold HTTP response
+    static const uint16_t IN_BUFFER_SIZE = 1000;       // size of buffer to hold HTTP request
+    static const uint16_t OUT_BUFFER_SIZE = 1000;      // size of buffer to hold HTTP response
     char request_buffer[IN_BUFFER_SIZE];        // char array buffer to hold HTTP request
     char response_buffer[OUT_BUFFER_SIZE];      // char array buffer to hold HTTP response
     char body[100];                             // for body
     authentification_method auth = GETUSERNAME; // default
     char username[100];
-    bool is_auth_valid = False;
+    bool is_auth_valid = false;
 
 public:
     void post_request_authentification(char *user_input, int door_id = 1)
@@ -78,10 +81,10 @@ public:
         switch (auth)
         {
         case GETUSERNAME:
-            username = response_buffer; // response should be smth like username if this card_id exists + if a person can access the door
+            strcpy(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
             break;
         default:
-            is_auth_valid = response_buffer; // somehow
+            //is_auth_valid = response_buffer; // somehow
             break;
         }
     }
@@ -93,4 +96,6 @@ public:
     {
         return username;
     }
-}
+};
+
+#endif // MULTIPLE_PASSWORD_H

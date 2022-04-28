@@ -1,3 +1,6 @@
+#ifndef BUTTON_H
+#define BUTTON_H
+
 //enum for button states
 enum button_state {S0,S1,S2,S3,S4};
  
@@ -63,3 +66,5 @@ class Button{
     return flag;
   }
 };
+
+#endif // BUTTON_H

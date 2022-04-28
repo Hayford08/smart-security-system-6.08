@@ -108,7 +108,7 @@ private:
         Serial.println();
         Serial.print("Message : ");
         content.toUpperCase();
-        newcard = "";
+        newcard[0] = '\0';
         memcpy(newcard, &cardcontent[1], strlen(cardcontent) - 1);
         Serial.println(newcard);
 

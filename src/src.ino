@@ -41,12 +41,12 @@ float x, y, z; // variables for grabbing x,y,and z values
 const char USER[] = "random";
 
 // Some constants and some resources:
-const int RESPONSE_TIMEOUT = 6000;     // ms to wait for response from host
-const int POSTING_PERIOD = 6000;       // periodicity of getting a number fact.
-const uint16_t IN_BUFFER_SIZE = 1000;  // size of buffer to hold HTTP request
-const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
-char request_buffer[IN_BUFFER_SIZE];   // char array buffer to hold HTTP request
-char response_buffer[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP response
+//const int RESPONSE_TIMEOUT = 6000;     // ms to wait for response from host
+//const int POSTING_PERIOD = 6000;       // periodicity of getting a number fact.
+//const uint16_t IN_BUFFER_SIZE = 1000;  // size of buffer to hold HTTP request
+//const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
+//char request_buffer[IN_BUFFER_SIZE];   // char array buffer to hold HTTP request
+//char response_buffer[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP response
 
 const uint8_t BUTTON1 = 45; // pin connected to button
 const uint8_t BUTTON2 = 39; // pin connected to button
@@ -166,7 +166,6 @@ void setup()
 
   textInput = TextInputProcessor(BUTTON1);
   pinMode(LCD_CONTROL, OUTPUT);
-  multipass = MultiplePassword();
 }
 
 void loop()
