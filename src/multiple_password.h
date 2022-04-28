@@ -45,36 +45,36 @@ public:
         switch (auth)
         {
         case GETUSERNAME:
-            sprintf(body, "{\"getUsername\",\"card_id\":\"%s\"}", user_input);
+            sprintf(body, "?getUsername&card_id=%s", user_input);
             break;
         case AUTHMETHODS:
-            sprintf(body, "{\"getAuthenticationMethods\",\"username\":\"%s\"}", username);
+            sprintf(body, "?getAuthenticationMethods&username=%s", username);
             break;
         case CARDID:
-            sprintf(body, "{\"checkAccess\",\"type\":\"card_id\",\"card_id\":\"%s\",\"door_id\":\"%d\"}", user_input, door_id);
+            sprintf(body, "?checkAccess&type=card_id&card_id=%s&door_id=%d", user_input, door_id);
             break;
         case CARDBYUSERNAME:
-            sprintf(body, "{\"checkAccess\",\"type\":\"username\",\"username\":\"%s\",\"door_id\":\"%d\"}", user_input, door_id);
+            sprintf(body, "?checkAccess&type=username&username=%s&door_id=%d", user_input, door_id);
             break;
         case PINCODE:
-            sprintf(body, "{\"authenticate\",\"type\":\"pincode\",\"username\":\"%s\",\"pincode\":\"%s\"}", username, user_input);
+            sprintf(body, "?authenticate&type=pincode&username=%s&pincode=%s", username, user_input);
             break;
         case PASSWORD:
-            sprintf(body, "{\"authenticate\",\"type\":\"password\",\"username\":\"%s\",\"password\":\"%s\"}", username, user_input);
+            sprintf(body, "?authenticate&type=password&username=%s&password=%s", username, user_input);
             break;
         case PHRASE:
-            sprintf(body, "{\"authenticate\",\"type\":\"phrase\",\"username\":\"%s\",\"phrase\":\"%s\"}", username, user_input);
+            sprintf(body, "?authenticate&type=phrase&username=%s&phrase=%s", username, user_input);
             break;
         default:
             break;
         }
-        int body_len = strlen(body); // calculate body length (for header reporting)
-        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src HTTP/1.1\r\n");
+        // int body_len = strlen(body); // calculate body length (for header reporting)
+        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authenticate.py%s HTTP/1.1\r\n", body);
         strcat(request_buffer, "Host: 608dev-2.net\r\n");
-        strcat(request_buffer, "Content-Type: application/json\r\n");
-        sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n", body_len); // append string formatted to end of request buffer
-        strcat(request_buffer, "\r\n");                                                       // new line from header to body
-        strcat(request_buffer, body);                                                         // body
+        // strcat(request_buffer, "Content-Type: application/json\r\n");
+        // sprintf(request_buffer + strlen(request_buffer), "Content-Length: %d\r\n", body_len); // append string formatted to end of request buffer
+        // strcat(request_buffer, "\r\n");                                                       // new line from header to body
+        // strcat(request_buffer, body);                                                         // body
         strcat(request_buffer, "\r\n");                                                       // new line
         Serial.println(request_buffer);
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
