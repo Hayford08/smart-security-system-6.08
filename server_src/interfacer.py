@@ -28,14 +28,13 @@ def do_post_request(username, password, message_to_display=None):
         <html>
         <body>'''
 
+        admin_button = ''
         if check_admin(username):
-            admin_button = '''
+            admin_button = '''<br>
                 <form method="post" action = "admin.py">
                 <input type="submit" value="Click to enter Admin Mode", name=admin>
-                </form>'''
-        else:
-            admin_button = ''
-
+                </form>
+                <br>'''
 
         if message_to_display:
             output += f'''<p style= "color:red;"> {message_to_display}</p>'''
