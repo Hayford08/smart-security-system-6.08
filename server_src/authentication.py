@@ -1,10 +1,5 @@
 import sqlite3
 
-from matplotlib.style import use
-from requests import NullHandler
-from sympy import re
-
-
 database = '/var/jail/home/team26/server_src/database.db'
 def setup():
     """

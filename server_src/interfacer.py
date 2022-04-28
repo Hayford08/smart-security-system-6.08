@@ -6,7 +6,7 @@ import uuid
 import sys
 
 sys.path.append('/var/jail/home/team26/server_src/')
-from authentication import authenticate_login, get_credentials, update_passcodes
+from authentication import authenticate_login, get_credentials
 from database_request import get_id, get_user_door_access, get_user_info_from_session, create_user_session, delete_user_session, check_admin
 from forms import login_form, error_login_form
 
@@ -28,6 +28,15 @@ def do_post_request(username, password, message_to_display=None):
         <html>
         <body>'''
 
+        if check_admin(username):
+            admin_button = '''
+                <form method="post" action = "admin.py">
+                <input type="submit" value="Click to enter Admin Mode", name=admin>
+                </form>'''
+        else:
+            admin_button = ''
+
+
         if message_to_display:
             output += f'''<p style= "color:red;"> {message_to_display}</p>'''
         output += f'''<h2> Welcome {data["username"]}</h2>
@@ -40,27 +49,17 @@ def do_post_request(username, password, message_to_display=None):
             <li> Passcode: {raw_data[1]} </li>
             <li> Pincode: {raw_data[2]} </li> 
             <br>
+            <br><br>
+            <form method="post" action = "profile.py">
+            <input type="submit" value="Change Profile", name=profile>
+            </form>
+            {admin_button}
             <form method = "post">
-                <label for="new_password">Enter new passcode: </label><br>
-                <input type="text" id="new_password" name="new_password"><br>
-                <input type="submit" value="Submit" name="submit_new_password">
-                <br><br>
                 <input type="submit" value="Logout" name="logout">
             </form> 
             </ul>
-            '''
-        if check_admin(username):
-            output+='''
-            <form method="post" action = "admin.py">
-            <input type="submit" value="Click to enter Admin Mode", name=admin>
-            </form>
             </body>
         </html>
-        '''
-        else:
-            output+='''
-             </body>
-            </html>
         '''
         return output
     except:
