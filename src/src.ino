@@ -204,9 +204,11 @@ void security_system_fsm()
   case TAP: // Tap Card
     scanner.loop();
     sprintf(output, "Please Tap Card");
-    Serial.printf("Id tapped: %s\n", scanner.newcard);
-    multipass.post_request_authentification(scanner.newcard);
-    Serial.println(multipass.get_username());
+    if(scanner.newcard[0] != '\0'){
+        Serial.printf("Id tapped: %s\n", scanner.newcard);
+        multipass.post_request_authentification(scanner.newcard);
+        Serial.printf("Username: %s\n", multipass.get_username());
+    }
     if (scanner.accessAuthorized)
     {
       Serial.println("access granted");

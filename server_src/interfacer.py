@@ -15,7 +15,7 @@ session_db = '/var/jail/home/team26/server_src/session.db'
 
 def do_post_request(username, password, message_to_display=None):
     user_hash = get_id()
-    raw_data = get_credentials(username, password)
+    raw_data = get_credentials(username)
     data={'username': username, 'password': password}
     try:
         # Create a session for current log in 
@@ -69,14 +69,12 @@ def request_handler(request):
     user_hash = get_id()
     user_info = get_user_info_from_session(user_hash)
 
-    if request["method"]=="POST":
+    if request["method"] == "POST" and not 'profile' in request['form']:
         # check if it is log out
-        try:
-            logout = request["form"]["logout"]
-            # remove user session
+        if 'logout' in request['form']:
             delete_user_session(user_hash)
             return login_form()
-        except:
+        else:
             if not user_info: # Ignore login requests when the user is already logged in
                 username = data["username"] = request["form"]["username"]
                 password = data["password"] = request["form"]["password"]
