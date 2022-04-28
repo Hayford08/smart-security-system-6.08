@@ -21,9 +21,9 @@ def authenticate_pincode(username, pincode):
     with sqlite3.connect(database) as c:
         return c.execute("""SELECT * FROM users WHERE username = ? AND pincode = ?""", (username, pincode)).fetchone() != None
 
-def get_credentials(username, password):
+def get_credentials(username):
     with sqlite3.connect(database) as c:
-        return c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
+        return c.execute("""SELECT * FROM users WHERE username = ?""", (username,)).fetchone()
 
 def retrieve_username(card_id):
     with sqlite3.connect(database) as c:

@@ -12,8 +12,7 @@ def request_handler(request):
     user_info = get_user_info_from_session(user_hash)
     if user_info:
         username, password = user_info[0], user_info[1]
-        data = get_credentials(username, password)
-        pincode = data[2]
+        
     else: # User is not logged in, unauthorized access
         return "unauthorized access"
 
@@ -21,6 +20,10 @@ def request_handler(request):
         new_password = request['form']['new_password']
         new_pincode = request['form']['pincode']
         update_credentials(username, password, {'pincode': new_pincode, 'password': new_password})
+
+    data = get_credentials(username)
+    password = data[1]
+    pincode = data[2]
     
     return f'''<!DOCTYPE html>
         <html>
