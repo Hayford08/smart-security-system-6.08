@@ -6,6 +6,7 @@
 #include <math.h>
 #include "button.h"
 #include "text_input.h"
+#include "pin_input.h"
 #include "card_scanner.h"
 #include "door.h"
 #include "multiple_password.h"
@@ -41,12 +42,12 @@ float x, y, z; // variables for grabbing x,y,and z values
 const char USER[] = "random";
 
 // Some constants and some resources:
-//const int RESPONSE_TIMEOUT = 6000;     // ms to wait for response from host
-//const int POSTING_PERIOD = 6000;       // periodicity of getting a number fact.
-//const uint16_t IN_BUFFER_SIZE = 1000;  // size of buffer to hold HTTP request
-//const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
-//char request_buffer[IN_BUFFER_SIZE];   // char array buffer to hold HTTP request
-//char response_buffer[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP response
+// const int RESPONSE_TIMEOUT = 6000;     // ms to wait for response from host
+// const int POSTING_PERIOD = 6000;       // periodicity of getting a number fact.
+// const uint16_t IN_BUFFER_SIZE = 1000;  // size of buffer to hold HTTP request
+// const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
+// char request_buffer[IN_BUFFER_SIZE];   // char array buffer to hold HTTP request
+// char response_buffer[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP response
 
 const uint8_t BUTTON1 = 45; // pin connected to button
 const uint8_t BUTTON2 = 39; // pin connected to button
@@ -54,6 +55,7 @@ MPU6050 imu;                // imu object called, appropriately, imu
 
 Button button1(BUTTON1), button2(BUTTON2);
 TextInputProcessor textInput;
+PinInputProcessor pinInput;
 CardScanner scanner;
 Door door;
 MultiplePassword multipass;
@@ -65,6 +67,7 @@ enum Stage
   LOCKED,
   TAP,
   TEXT,
+  PIN,
   UNLOCKED
 };
 
@@ -84,6 +87,7 @@ const double BASELINE = 11.7;
 const float ZOOM = 9.81; // for display (converts readings into m/s^2)...used for visualizing only
 int global_steps = 0;
 uint8_t LCD_PWM = 0, LCD_CONTROL = 21;
+char* username;
 
 void setup()
 {
@@ -165,6 +169,7 @@ void setup()
   door.setup();
 
   textInput = TextInputProcessor(BUTTON1);
+  pinInput = PinInputProcessor(BUTTON1);
   pinMode(LCD_CONTROL, OUTPUT);
 }
 
@@ -199,29 +204,68 @@ void security_system_fsm()
     state = TAP;
     sprintf(output, "LOCKED");
     textInput = TextInputProcessor(BUTTON1);
+    pinInput = PinInputProcessor(BUTTON1);
     break;
 
   case TAP: // Tap Card
     scanner.loop();
     sprintf(output, "Please Tap Card");
-    if(scanner.newcard[0] != '\0'){
-        Serial.printf("Id tapped: %s\n", scanner.newcard);
-        multipass.post_request_authentification(scanner.newcard);
-        Serial.printf("Username: %s\n", multipass.get_username());
+    if (scanner.newcard[0] != '\0')
+    {
+      Serial.printf("Id tapped: %s\n", scanner.newcard);
+      multipass.post_request_authentification(scanner.newcard);
+      Serial.printf("Username: %s\n", multipass.get_username());
+      username = multipass.get_username();
     }
+    multipass.set_auth_method(AUTHMETHODS); //leave for later
+    multipass.post_request_authentification(); //leave for later
     if (scanner.accessAuthorized)
     {
       Serial.println("access granted");
       scanner.reset();
+      state = PIN;
+    }
+    break;
+  case PIN: // Enter text with imu
+    // Read imu data
+    int16_t data[3];
+    imu.readAccelData(data); // readGyroData(data);
+    float x, y, z;
+    x = ZOOM * data[0] * imu.aRes;
+    y = ZOOM * data[1] * imu.aRes;
+    z = ZOOM * data[2] * imu.aRes;
+
+    // Update textInput
+    Serial.println(x);
+    pinInput.update(x);
+    if (pinInput.isValid())
+    {
+      sprintf(output, "%s     ", pinInput.getText());
+    }
+    else
+    {
+      sprintf(output, "%s     ", pinInput.getCurrentText());
+    }
+
+    Serial.println(pinInput.isValid());
+    Serial.println(pinInput.getCurrentText());
+
+    // If the text is a hardcoded "enter", unlock the door
+
+    // char lower[100];
+    // to_lower(textInput.getCurrentText(), lower);
+    multipass.set_auth_method(PINCODE);
+    multipass.post_request_authentification(pinInput.getCurrentText(), username);
+    if (multipass.is_auth_valid)
+    {
       state = TEXT;
+      door.open_door();
     }
     break;
 
   case TEXT: // Enter text with imu
     // Read imu data
-    int16_t data[3];
     imu.readAccelData(data); // readGyroData(data);
-    float x, y, z;
     x = ZOOM * data[0] * imu.aRes;
     y = ZOOM * data[1] * imu.aRes;
     z = ZOOM * data[2] * imu.aRes;
