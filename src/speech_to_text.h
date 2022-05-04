@@ -359,6 +359,4 @@ private:
     buff[len + 1] = '\0';
     return true;
     }
-
-
-}
+};
