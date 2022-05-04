@@ -47,6 +47,7 @@ def do_post_request(username, password, message_to_display=None):
 
             <li> Passcode: {raw_data[1]} </li>
             <li> Pincode: {raw_data[2]} </li> 
+            <li> Voice Phrase: {raw_data[3]} </li> 
             <br>
             <br><br>
             <form method="post" action = "profile.py">
