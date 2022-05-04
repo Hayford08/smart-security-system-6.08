@@ -1,14 +1,12 @@
-#ifndef TEXT_INPUT_H
-#define TEXT_INPUT_H
+#ifndef PIN_INPUT_H
+#define PIN_INPUT_H
 
-// char CHARACTERS[26] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";//"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-class TextInputProcessor
+class PinInputProcessor
 {
 private:
   char current[100], text[100];
   bool valid = false;
-  int CHAR_COUNT = 26; // 62;
-  int NUM_COUNT = 10;  // 62;
+  int NUM_COUNT = 10; // 62;
   int counter = 0, ptr = 0;
   float ANG_THRESHOLD = 1.0; // TODO CHANGE THIS
   int last_update = 0;
@@ -16,17 +14,13 @@ private:
   Button button = Button(0);
 
 public:
-  TextInputProcessor(int BUTTON = 0)
+  PinInputProcessor(int BUTTON = 0)
   {
     button = Button(BUTTON);
     memset(text, 0, sizeof(text));
     memset(current, 0, sizeof(current));
   }
 
-  char getChar(int id)
-  {
-    return (char)('A' + id);
-  }
   char getNum(int id)
   {
     return (char)('0' + id);
@@ -43,10 +37,10 @@ public:
           counter++;
         if (x < 0)
           counter--;
-        counter = (counter + CHAR_COUNT) % CHAR_COUNT;
+        counter = (counter + NUM_COUNT) % NUM_COUNT;
       }
     }
-    current[ptr] = getChar(counter);
+    current[ptr] = getNum(counter);
 
     int input = button.update();
     if (valid && input)
@@ -60,7 +54,7 @@ public:
     }
     if (input == 1)
     {
-      current[ptr++] = getChar(counter);
+      current[ptr++] = getNum(counter);
       counter = 0;
     }
     else if (input == 2)
@@ -88,7 +82,7 @@ public:
 
   char getCurrentChar()
   {
-    return getChar(counter);
+    return getNum(counter);
   }
 };
 

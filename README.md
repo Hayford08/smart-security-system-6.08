@@ -97,3 +97,71 @@ def get_user_info_from_session():
 
 
 The session is deleted when the user logs out of the website. In that case, the database clears the information associated with a particular user_id. This functionality was tested with different usernames and passwords and works as intended. Next thing to work on will be to have a separate page for changing the password.
+
+### Changing Profile Info
+Users can log in to the website and change their credentials (password, pincode, etc.).
+This is done in `profile.py` as follows:
+```python
+new_password = request['form']['new_password']
+new_pincode = request['form']['pincode']
+update_credentials(username, password, {'pincode': new_pincode, 'password': new_password})
+```
+The `update_credentials` function in `authentication.py` then connects to the database and update the information accordingly:
+```python
+def update_credentials(username, password, data):
+    # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
+    with sqlite3.connect(database) as c:
+        object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
+        if "pincode" not in data:
+            data["pincode"] = object[2]
+        c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
+        c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
+    return "Password Updated Successfully"
+```
+
+### MultiplePasswords
+
+This class is designed to handle GET requests to the server. The type of request is exposed to the client by the `authentification_method`
+enum.
+
+```cpp
+enum authentification_method
+{
+    GETUSERNAME,
+    AUTHMETHODS,
+    CARDID,
+    CARDBYUSERNAME,
+    PINCODE,
+    PASSWORD,
+    PHRASE
+};
+```
+
+Here, `GETUSERNAME` gets the username corresponding to the card id. According to the value of an enum variable, the 
+`MultiplePasswords` class sends different GET requests to the server, as shown below:
+
+```cpp
+case GETUSERNAME:
+    sprintf(body, "?getUsername&card_id=%s", user_input);  // gets username from card id
+    break;
+case AUTHMETHODS:
+    sprintf(body, "?getAuthenticationMethods&username=%s", username);       // returns the authentication methods available to the user, in the format "password=<True/False>\npincode=<True/False>\n"
+    break;
+case CARDID:
+    sprintf(body, "?checkAccess&type=card_id&card_id=%s&door_id=%d", user_input, door_id); // returns whether the card_id has access to the door
+    break;
+case CARDBYUSERNAME:
+    sprintf(body, "?checkAccess&type=username&username=%s&door_id=%d", user_input, door_id); // returns whether the user has access to the door
+    break;
+case PINCODE:
+    sprintf(body, "?authenticate&type=pincode&username=%s&pincode=%s", username, user_input); // returns whether the entered pincode is correct
+    break;
+case PASSWORD:
+    sprintf(body, "?authenticate&type=password&username=%s&password=%s", username, user_input); // returns whether the returned password is correct
+    break;
+case PHRASE:
+    sprintf(body, "?authenticate&type=phrase&username=%s&phrase=%s", username, user_input); // returns whether the spoken phrase is correct. Doesn't work yet
+    break;
+default:
+    break;
+```
