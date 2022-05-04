@@ -5,13 +5,14 @@ def setup():
     """
     This is the function to create the default usernames, passwords, pincodes, and is_admin in the database
     """
-    values = [('dkriezis', '8130070', '542071', 0, 'E0 16 99 1B'), ('hayford', '5317558', '798333', 0, '88 2B 47 E3'), 
-              ("Admin", "Admin", "470236", 1, 'AC EC 64 68'),  ('vladap', '9466123', '670426', 0, '63 E1 B3 31'), 
-              ('muhender', '4616833', '057548', 0, 'D3 CC 5F 6D'), ('mazaheri','8150042', '113312', 0, '06 A4 40 B7')]
+    values = [('dkriezis', '8130070', '542071', 0, 'E0 16 99 1B', 'left'), ('hayford', '5317558', '798333', 0, '88 2B 47 E3', 'left'), 
+              ("Admin", "Admin", "470236", 1, 'AC EC 64 68', 'left'),  ('vladap', '9466123', '670426', 0, '63 E1 B3 31', 'left'), 
+              ('muhender', '4616833', '057548', 0, 'D3 CC 5F 6D', 'left'), ('mazaheri','8150042', '113312', 0, '06 A4 40 B7', 'left')]
     with sqlite3.connect(database) as c:
-        c.execute("""CREATE TABLE IF NOT EXISTS users (username text, password text, pincode text, is_admin integer, card_id text);""")
+        c.execute("DROP TABLE users")
+        c.execute("""CREATE TABLE IF NOT EXISTS users (username text, password text, pincode text, is_admin integer, card_id text, gesture_password text);""")
         for tup in values:
-            c.execute("""INSERT INTO users (username, password, pincode, is_admin, card_id) VALUES (?,?,?,?,?)""", (tup[0], tup[1], tup[2], tup[3], tup[4]))
+            c.execute("""INSERT INTO users (username, password, pincode, is_admin, card_id, gesture_password) VALUES (?,?,?,?,?,?)""", (tup[0], tup[1], tup[2], tup[3], tup[4], tup[5]))
 
 def authenticate_login(username, password):
     with sqlite3.connect(database) as c:
@@ -20,6 +21,10 @@ def authenticate_login(username, password):
 def authenticate_pincode(username, pincode):
     with sqlite3.connect(database) as c:
         return c.execute("""SELECT * FROM users WHERE username = ? AND pincode = ?""", (username, pincode)).fetchone() != None
+
+def authenticate_gestures(username, gesture):
+    with sqlite3.connect(database) as c:
+        return c.execute("""SELECT * from users WHERE username = ? AND gesture_password = ? """, (username, gesture)).fetchone() != None
 
 def get_credentials(username):
     with sqlite3.connect(database) as c:
@@ -90,6 +95,12 @@ def request_handler(request):
                 pincode = request['values']['pincode']
                 return authenticate_pincode(username, pincode)
             return False
+        
+    if request["method"] == "POST":
+        if 'authenticate_gesture' in request['form']:
+            return authenticate_gestures(request['form']['username'], request['form']['gesture_sequence'])
+            
+
     return "Unsupported Request"
 
 

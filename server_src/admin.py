@@ -7,14 +7,14 @@ from database_request import get_id, get_all_users, get_user_door_access_input, 
 
 def request_handler(request):
 
-    user_hash = get_id()
-    user_info = get_user_info_from_session(user_hash)
-    if user_info:
-        username, password = user_info[0], user_info[1]
-        if not check_admin(username): # User does not have admin privileges, unauthorized access
-            return "unauthorized access"
-    else: # User is not logged in, unauthorized access
-        return "unauthorized access"
+    # user_hash = get_id()
+    # user_info = get_user_info_from_session(user_hash)
+    # if user_info:
+    #     username, password = user_info[0], user_info[1]
+    #     if not check_admin(username): # User does not have admin privileges, unauthorized access
+    #         return "unauthorized access"
+    # else: # User is not logged in, unauthorized access
+    #     return "unauthorized access"
 
     if request["method"] == "POST" and "admin" not in request["form"]:
         username = request["form"]["username"]
@@ -33,9 +33,12 @@ def request_handler(request):
         <html>
             <body>
             <h2> For your eyes only </h2>
-            <h3> User Door Acess </h3>
+            <h3> User Door Access </h3>
             <div>
                 {output} 
             </div>
+            <form method = "get" action="interfacer.py">
+                <input type="submit" value="Return to home">
+            </form>
         </html>
         '''
