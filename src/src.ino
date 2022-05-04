@@ -10,6 +10,7 @@
 #include "card_scanner.h"
 #include "door.h"
 #include "multiple_password.h"
+#include "speech_to_text.h"
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
@@ -59,6 +60,7 @@ PinInputProcessor pinInput;
 CardScanner scanner;
 Door door;
 MultiplePassword multipass;
+SpeechToText speechToText;
 
 // some suggested variables you can use or delete:
 
@@ -167,6 +169,7 @@ void setup()
 
   scanner.setup();
   door.setup();
+  speechToText.setup();
 
   textInput = TextInputProcessor(BUTTON1);
   pinInput = PinInputProcessor(BUTTON1);
@@ -175,6 +178,7 @@ void setup()
 
 void loop()
 {
+  // CALL char * phrase = speechToText.run();
   // get IMU information:
   // imu.readAccelData(imu.accelCount);
 

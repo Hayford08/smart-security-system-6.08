@@ -3,16 +3,16 @@ import sqlite3
 database = '/var/jail/home/team26/server_src/database.db'
 def setup():
     """
-    This is the function to create the default usernames, passwords, pincodes, and is_admin in the database
+    This is the function to create the default usernames, passwords, pincodes, voice_phrase, and is_admin in the database
     """
-    values = [('dkriezis', '8130070', '542071', 0, 'E0 16 99 1B', 'left'), ('hayford', '5317558', '798333', 0, '88 2B 47 E3', 'left'), 
-              ("Admin", "Admin", "470236", 1, 'AC EC 64 68', 'left'),  ('vladap', '9466123', '670426', 0, '63 E1 B3 31', 'left'), 
-              ('muhender', '4616833', '057548', 0, 'D3 CC 5F 6D', 'left'), ('mazaheri','8150042', '113312', 0, '06 A4 40 B7', 'left')]
+    values = [('dkriezis', '8130070', '542071', 'banana', 0, 'E0 16 99 1B', 'left'), ('hayford', '5317558', '798333', 'orange', 0, '88 2B 47 E3', 'left'), 
+              ("Admin", "Admin", "470236", 'puppy', 1, 'AC EC 64 68', 'left'),  ('vladap', '9466123', '670426', 'rug', 0, '63 E1 B3 31', 'left'), 
+              ('muhender', '4616833', '057548', 0, 'north', 'D3 CC 5F 6D', 'left'), ('mazaheri','8150042', '113312', 'cat', 0, '06 A4 40 B7', 'left')]
     with sqlite3.connect(database) as c:
         c.execute("DROP TABLE users")
-        c.execute("""CREATE TABLE IF NOT EXISTS users (username text, password text, pincode text, is_admin integer, card_id text, gesture_password text);""")
+        c.execute("""CREATE TABLE IF NOT EXISTS users (username text, password text, pincode text, voice_phrase text, is_admin integer, card_id text, gesture_password text);""")
         for tup in values:
-            c.execute("""INSERT INTO users (username, password, pincode, is_admin, card_id, gesture_password) VALUES (?,?,?,?,?,?)""", (tup[0], tup[1], tup[2], tup[3], tup[4], tup[5]))
+            c.execute("""INSERT INTO users (username, password, pincode, voice_phrase, is_admin, card_id, gesture_password) VALUES (?,?,?,?,?,?,?)""", (tup[0], tup[1], tup[2], tup[3], tup[4], tup[5], tup[6]))
 
 def authenticate_login(username, password):
     with sqlite3.connect(database) as c:
@@ -25,6 +25,10 @@ def authenticate_pincode(username, pincode):
 def authenticate_gestures(username, gesture):
     with sqlite3.connect(database) as c:
         return c.execute("""SELECT * from users WHERE username = ? AND gesture_password = ? """, (username, gesture)).fetchone() != None
+        
+def authenticate_voice_phrase(username, voice_phrase):
+    with sqlite3.connect(database) as c:
+        return c.execute("""SELECT * FROM users WHERE username = ? AND voice_phrase = ?""", (username, voice_phrase)).fetchone() != None
 
 def get_credentials(username):
     with sqlite3.connect(database) as c:
@@ -40,7 +44,7 @@ def retrieve_username(card_id):
 def get_authentication_methods(username):
     with sqlite3.connect(database) as c:
         object = c.execute("""SELECT * FROM users WHERE username = ?""", (username)).fetchone()
-        return 'password=' + str(object[1] != '') + '\npincode=' + str(object[2] != '') + '\n'
+        return 'password=' + str(object[1] != '') + '\npincode=' + str(object[2] != '') + '\nvoice=' + str(object[3] != '') + '\n'
 
 def checkAccess(username, door_id):
     with sqlite3.connect(database) as c:
@@ -53,6 +57,9 @@ def update_credentials(username, password, data):
         object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
         if "pincode" not in data:
             data["pincode"] = object[2]
+        if "voice_phrase" not in data:
+            data["voice_phrase"] = object[3]
+        c.execute("""UPDATE users SET voice_phrase = ? WHERE username = ? AND password = ?""", (data['voice_phrase'], username, password)).fetchone()
         c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
         c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
     return "Password Updated Successfully"
@@ -69,6 +76,7 @@ def request_handler(request):
 
     #       ?authenticate&username=<username>&password=<password> => returns true if the password matches the username
     #       ?authenticate&username=<username>&pincode=<pincode> => returns true if the pincode matches the username
+    #       ?authenticate&username=<username>&voice_phrase=<voice_phrase> => returns true if the voice phrase matches the username
     #       => returns "Unsupported Request" otherwise
     if request['method'] == 'GET':
         if 'checkAccess' in request['args']:
@@ -88,12 +96,15 @@ def request_handler(request):
 
         elif 'authenticate' in request['args']:
             username = request['values']['username']
-            if request['values']['type'] == 'password':
+            if 'password' in request['values']['values']:
                 password = request['values']['password']
                 return authenticate_login(username, password)
-            elif request['values']['type'] == 'pincode':
+            elif 'pincode' in request['values']['values']:
                 pincode = request['values']['pincode']
                 return authenticate_pincode(username, pincode)
+            elif 'voice_phrase' in request['values']['values']:
+                voice_phrase = request['values']['voice_phrase']
+                return authenticate_voice_phrase(username, voice_phrase)
             return False
         
     if request["method"] == "POST":
