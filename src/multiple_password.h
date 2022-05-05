@@ -43,13 +43,14 @@ private:
 
 public:
     bool is_auth_valid = false;
-    void post_request_authentification(char *user_input = "\0", char*username = "\0", int door_id = 1)
+    void post_request_authentification(char *user_input = "\0", char *username = "\0", int door_id = 1)
     {
         // GENERATE BODY JSON
         switch (auth)
         {
         case GETUSERNAME:
             sprintf(body, "?getUsername&card_id=%s", user_input);
+            Serial.println(body);
             break;
         case AUTHMETHODS:
             sprintf(body, "?getAuthenticationMethods&username=%s", username);

@@ -14,7 +14,7 @@
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
-char network[] = "MIT";
+char network[] = "RLE";
 char password[] = "";
 /* Having network issues since there are 50 MIT and MIT_GUEST networks?. Do the following:
     When the access points are printed out at the start, find a particularly strong one that you're targeting.
@@ -89,7 +89,7 @@ const double BASELINE = 11.7;
 const float ZOOM = 9.81; // for display (converts readings into m/s^2)...used for visualizing only
 int global_steps = 0;
 uint8_t LCD_PWM = 0, LCD_CONTROL = 21;
-char* username;
+char *username;
 
 void setup()
 {
@@ -217,7 +217,8 @@ void security_system_fsm()
     if (scanner.newcard[0] != '\0')
     {
       Serial.printf("Id tapped: %s\n", scanner.newcard);
-      multipass.post_request_authentification(scanner.newcard);
+      // post_request_authentication requires user_input, username, and door_id
+      multipass.post_request_authentification(scanner.newcard, username);
       Serial.printf("Username: %s\n", multipass.get_username());
       username = multipass.get_username();
     }
@@ -259,7 +260,7 @@ void security_system_fsm()
     // char lower[100];
     // to_lower(textInput.getCurrentText(), lower);
     multipass.set_auth_method(PINCODE);
-    multipass.post_request_authentification(pinInput.getCurrentText(), username);
+    multipass.post_request_authentification(pinInput.getCurrentText());
     if (multipass.is_auth_valid)
     {
       state = TEXT;

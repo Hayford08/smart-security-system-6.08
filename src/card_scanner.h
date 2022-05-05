@@ -112,23 +112,23 @@ private:
         memcpy(newcard, &cardcontent[1], strlen(cardcontent) - 1);
         Serial.println(newcard);
 
-        if (!strcmp(newcard, authorizedCard))
-        {
-            Serial.println("Authorized access");
-            Serial.println();
-            digitalWrite(GREEN_LED, 0);
-            accessAuthorized = true;
-            delay(1000);
-            digitalWrite(GREEN_LED, 1);
-        }
+        // if (!strcmp(newcard, authorizedCard))
+        // {
+        //     Serial.println("Authorized access");
+        //     Serial.println();
+        //     digitalWrite(GREEN_LED, 0);
+        //     accessAuthorized = true;
+        //     delay(1000);
+        //     digitalWrite(GREEN_LED, 1);
+        // }
 
-        else
-        {
-            Serial.println(" Access denied");
-            digitalWrite(RED_LED, 0);
-            delay(3000);
-            digitalWrite(RED_LED, 1);
-        }
+        // else
+        // {
+        //     Serial.println(" Access denied");
+        //     digitalWrite(RED_LED, 0);
+        //     delay(3000);
+        //     digitalWrite(RED_LED, 1);
+        // }
     }
 };
 
