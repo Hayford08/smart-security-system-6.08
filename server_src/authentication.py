@@ -1,15 +1,16 @@
 import sqlite3
 
 database = '/var/jail/home/team26/server_src/database.db'
+database = "./database.db"
 def setup():
     """
     This is the function to create the default usernames, passwords, pincodes, voice_phrase, and is_admin in the database
     """
-    values = [('dkriezis', '8130070', '542071', 'banana', 0, 'E0 16 99 1B', 'left'), ('hayford', '5317558', '798333', 'orange', 0, '88 2B 47 E3', 'left'), 
+    values = [('dkriezis', '8130070', '542071', 'banana', 0, 'E0 16 99 1B', 'left'), ('hayford', '5317558', '798333', 'orange', 0, '73 25 A1 31', 'left'), 
               ("Admin", "Admin", "470236", 'puppy', 1, 'AC EC 64 68', 'left'),  ('vladap', '9466123', '670426', 'rug', 0, '63 E1 B3 31', 'left'), 
               ('muhender', '4616833', '057548', 0, 'north', 'D3 CC 5F 6D', 'left'), ('mazaheri','8150042', '113312', 'cat', 0, '06 A4 40 B7', 'left')]
     with sqlite3.connect(database) as c:
-        c.execute("DROP TABLE users")
+        # c.execute("""DROP TABLE users""")
         c.execute("""CREATE TABLE IF NOT EXISTS users (username text, password text, pincode text, voice_phrase text, is_admin integer, card_id text, gesture_password text);""")
         for tup in values:
             c.execute("""INSERT INTO users (username, password, pincode, voice_phrase, is_admin, card_id, gesture_password) VALUES (?,?,?,?,?,?,?)""", (tup[0], tup[1], tup[2], tup[3], tup[4], tup[5], tup[6]))
@@ -125,4 +126,4 @@ def request_handler(request):
 #         c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (object[], username, password)).fetchone()
 #     return "Password Updated Successfully"
 
-# setup()
+setup()
