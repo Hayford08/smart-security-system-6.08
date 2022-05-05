@@ -5,7 +5,7 @@ gestures_db = '/var/jail/home/team26/server_src/gestures.db'
 def request_handler(request):
     # with sqlite3.connect(gestures_db) as c:
     #     default_gestures = c.execute("""SELECT * FROM gesture_acceleration""").fetchall()
-    #     return len(default_gestures[3][1]), len(default_gestures[2][1])
+    #     return (default_gestures[3][0],len(default_gestures[3][1])), (default_gestures[2][0], len(default_gestures[2][1]))
     #     return default_gestures
     if request["method"] == "POST":
         ## HERE do training of gestures
