@@ -1,7 +1,6 @@
 import sqlite3
 
 database = '/var/jail/home/team26/server_src/database.db'
-database = "./database.db"
 def setup():
     """
     This is the function to create the default usernames, passwords, pincodes, voice_phrase, and is_admin in the database
@@ -44,7 +43,7 @@ def retrieve_username(card_id):
     
 def get_authentication_methods(username):
     with sqlite3.connect(database) as c:
-        object = c.execute("""SELECT * FROM users WHERE username = ?""", (username)).fetchone()
+        object = c.execute("""SELECT * FROM users WHERE username = ?""", (username,)).fetchone()
         return 'password=' + str(object[1] != '') + '\npincode=' + str(object[2] != '') + '\nvoice=' + str(object[3] != '') + '\n'
 
 def checkAccess(username, door_id):
@@ -97,13 +96,13 @@ def request_handler(request):
 
         elif 'authenticate' in request['args']:
             username = request['values']['username']
-            if 'password' in request['values']['values']:
+            if 'password' in request['values']:
                 password = request['values']['password']
                 return authenticate_login(username, password)
-            elif 'pincode' in request['values']['values']:
+            elif 'pincode' in request['values']:
                 pincode = request['values']['pincode']
                 return authenticate_pincode(username, pincode)
-            elif 'voice_phrase' in request['values']['values']:
+            elif 'voice_phrase' in request['values']:
                 voice_phrase = request['values']['voice_phrase']
                 return authenticate_voice_phrase(username, voice_phrase)
             return False
@@ -126,4 +125,4 @@ def request_handler(request):
 #         c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (object[], username, password)).fetchone()
 #     return "Password Updated Successfully"
 
-setup()
+#setup()

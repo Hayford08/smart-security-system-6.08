@@ -44,16 +44,16 @@ public:
         digitalWrite(RED_LED, 1);
         digitalWrite(BLUE_LED, 1);
         digitalWrite(GREEN_LED, 1);
-        Serial.println("Approximate your card to the reader...");
-        Serial.println();
+        Serial.println("Approximate your card to the reader...\n");
     }
 
     void loop()
-    {
+    { 
         manage_close_button();
         // Look for new cards
         if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())
         {
+            Serial.println("ABOUT TO READ A NEW CARD");
             read_card();
         }
     }

@@ -33,9 +33,9 @@ private:
     static const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
     char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
     char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
-    char body[100];                               // for body
+    char body[200];                               // for body
     authentification_method auth = GETUSERNAME;   // default
-    char username[100];
+    char username[6000]="";
     // bool is_auth_valid = false;
     bool is_password_needed = false;
     bool is_pincode_needed = false;
@@ -89,7 +89,10 @@ public:
             parse_auth_methods(response_buffer);
             break;
         case GETUSERNAME:
-            strcpy(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
+            memset(username, 0, sizeof(username));
+            sprintf(username, response_buffer);
+            Serial.println("GOT USERNAME");
+            //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
             break;
         default:
             if(response_buffer[0] == 'T' && response_buffer[1] == 'r' && response_buffer[2] == 'u' && response_buffer[3] == 'e')

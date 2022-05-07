@@ -14,7 +14,7 @@
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
-char network[] = "RLE";
+char network[] = "EECS-Lounges";
 char password[] = "";
 /* Having network issues since there are 50 MIT and MIT_GUEST networks?. Do the following:
     When the access points are printed out at the start, find a particularly strong one that you're targeting.
@@ -190,13 +190,10 @@ void loop()
   // sprintf(sss, "X:%f", acc_mag);
   // Serial.println(sss);
 
-  // get button readings:
-
   security_system_fsm();
   update_lcd();
 
-  while (millis() - primary_timer < LOOP_PERIOD)
-    ; // wait for primary timer to increment
+  while (millis() - primary_timer < LOOP_PERIOD); // wait for primary timer to increment
   primary_timer = millis();
 }
 
@@ -213,27 +210,43 @@ void security_system_fsm()
 
   case TAP: // Tap Card
     scanner.loop();
-    sprintf(output, "Please Tap Card");
+    sprintf(output, "Please Tap Card"); 
+    scanner.newcard[0]='\0';
+    delay(3000);
+    sprintf(scanner.newcard, "73 25 A1 31");  
+    //scanner.newcard = "73 25 A1 31"; // hard coding for now
     if (scanner.newcard[0] != '\0')
     {
+      multipass.set_auth_method(GETUSERNAME); //0 -- getting username
       Serial.printf("Id tapped: %s\n", scanner.newcard);
-      // post_request_authentication requires user_input, username, and door_id
-      multipass.post_request_authentification(scanner.newcard, username);
+      
+      // Request username from authentification 
+      multipass.post_request_authentification(scanner.newcard);
+
       Serial.printf("Username: %s\n", multipass.get_username());
       username = multipass.get_username();
-    }
-    multipass.set_auth_method(AUTHMETHODS); //leave for later
-    multipass.post_request_authentification(); //leave for later
-    if (scanner.accessAuthorized)
-    {
-      Serial.println("access granted");
-      scanner.reset();
+
+      //username = "hayford";
       state = PIN;
+      if (strcmp(username, "")){ // username is not empty
+        Serial.println("ABOUT TO GET AUTH!!!");
+        multipass.set_auth_method(AUTHMETHODS); //leave for later
+        multipass.post_request_authentification(); //leave for later
+        if (scanner.accessAuthorized)
+        {
+          Serial.println("access granted");
+          scanner.reset();
+          state = PIN;
+        }
+      }
     }
     break;
   case PIN: // Enter text with imu
     // Read imu data
     int16_t data[3];
+    output[0] = '\0';
+    sprintf(output, "Enter your PIN"); 
+    delay(1000); 
     imu.readAccelData(data); // readGyroData(data);
     float x, y, z;
     x = ZOOM * data[0] * imu.aRes;
@@ -260,7 +273,7 @@ void security_system_fsm()
     // char lower[100];
     // to_lower(textInput.getCurrentText(), lower);
     multipass.set_auth_method(PINCODE);
-    multipass.post_request_authentification(pinInput.getCurrentText());
+    multipass.post_request_authentification(pinInput.getCurrentText(), username);
     if (multipass.is_auth_valid)
     {
       state = TEXT;
