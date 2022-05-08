@@ -13,13 +13,13 @@ Overview
 ===============================================================================
 As mentioned briefly in the introduction, the goal of our project was to design a multi-layer security system for accessing doors.
 
-More specifically, our system has the following security layers. First of all, the user needs to tap his card or fob on an RFID
+More specifically, our system has the following security layers: the user first taps their card or fobs on an RFID
 scanner. Upon tapping the card, the system will either accept or reject the card. If the card is rejected, then the user cannot enter the door.
 If, however, the card is accepted, then the user will be prompted to go through the next layer of security, which is entering a passcode. If the user enters 
-the correct passcode he will move to the next security layer, which is speaking a passcode to the microphone. Once he gets authenticates he will move to the final 
-security layer which is moving the esp in a certain pattern. Once he has gone through all of these security layers, he gets access to the door, and the door opens.
+the correct passcode, they will move to the next security layer, which is speaking a passphrase to the microphone. Once they get authenticated, they will move to the final 
+security layer which is moving the esp in a certain pattern. Once they have gone through all of these security layers, they get access to the door, and the door opens.
 
-It is important to note that each passcode is chosen by the user himself by accessing our website, where he can change and see his passwords, as well as which doors he has access to.
+It is important to note that each passcode is chosen by the user themself by accessing our website, where they can change and see their passwords, as well as which doors they have access to.
 
 Additionally, our system supports an additional user, the Admin that has access to all the doors, and can assign and remove 
 access for the users from different doors.
@@ -39,6 +39,24 @@ Server Side
 
 
 ## Sessions
+We started by implementing sessions which allows the user to come back to the website already logged in with their credentials. This was
+being done by storing a universally unique identifier (UUID) from which the user accessed the webpage, username, and password. When a get request
+is made from the user, we check if that UUID has been seen before or not. If it has, we retrieve their session information from the database. 
+However, we run into a problem where multiple users could not be on the webpage as the concurrently. This is because the code (shown below) that was used to generate the UUID 
+for each user was providing the unique identifier for the server. 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_id():
+    """
+    This function returns the unique id for the computer the user uses
+    """
+    return hash(uuid.UUID(int=uuid.getnode()))
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A different approach was introduced to still allow the user to return to their session when they have not logged out. This was achieved by 
+using a localStorage. Each new login stores the user's username and password. Then for each new GET request, their localStorage is checked
+if there is a username and password already stored. If so, these information are used to retrieve the user information on the database and 
+will not be prompt to log in until they log out, where their localStorage is cleared. 
 
 
 ## Authentication
