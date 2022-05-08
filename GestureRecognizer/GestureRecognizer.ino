@@ -19,6 +19,16 @@ const uint8_t DOWN = 2;
 const uint8_t LEFT = 3;
 const uint8_t RIGHT = 4;
 
+char left_response[50]="";
+char right_response[50]="";
+char up_response[50]="";
+char down_response[50]="";
+
+char left_request[50]="";
+char right_request[50]="";
+char up_request[50]="";
+char down_request[50]="";
+
 const uint8_t LOOP_PERIOD = 30; //milliseconds
 uint32_t primary_timer = 0;
 uint32_t posting_timer = 0;
@@ -38,9 +48,9 @@ int iter = 0;
 bool measure;
 char json_body[6000] = "";
 float left_sequence[2000];
-float right_sequence[3000];
-float up_sequence[5000];
-float down_sequence[5000];
+float right_sequence[2000];
+float up_sequence[2000];
+float down_sequence[2000];
 
 enum button_state {S0,S1,S2,S3,S4};
  
@@ -200,8 +210,10 @@ void loop() {
   old_acc_mag = acc_mag;
   char movement[100] = "";
 
-  averaging_filter(x, left_sequence, 1787);    
-  averaging_filter(x, right_sequence, 2057);
+  averaging_filter(x, left_sequence, 320);    
+  averaging_filter(x, right_sequence, 362);
+  averaging_filter(y, up_sequence, 463);
+  averaging_filter(y, down_sequence, 500);
   // averaging_filter(y, up_sequence);
   // averaging_filter(y, down_sequence);
   
@@ -220,7 +232,7 @@ void loop() {
   //   Serial.println("here for some weird reason");
 
   //   measure = false;
-  //   sprintf(json_body, "training=true&direction=right&accel_sequence=");
+  //   sprintf(json_body, "training=true&direction=down&accel_sequence=");
   //   strcat(json_body, str_measurements);
   //   int body_len = strlen(json_body);
   //   Serial.println(json_body);
@@ -240,9 +252,9 @@ void loop() {
   // if(measure){
   //   Serial.println("Measuring");
   //   char measurement[10]="";
-  //   sprintf(measurement, "%4.2f,", x);
+  //   sprintf(measurement, "%4.2f,", y);
   //   strcat(str_measurements, measurement);
-  //   measurements[iter]=x;
+  //   measurements[iter]=y;
   //   iter+=1;
 
   // }
@@ -250,9 +262,39 @@ void loop() {
   // Comparing Correlation starts HERE
   if(input ==1){
     measure = false;
-    check_gesture(1787, left_sequence, "left");
-    check_gesture(2057, right_sequence, "right");
+    check_gesture(320, left_sequence, "left", left_response);
+    check_gesture(362, right_sequence, "right", right_response);
+    check_gesture(500, down_sequence, "down", down_response);
+    check_gesture(463, up_sequence, "up", up_response);
     // sprintf(gesture_sequence, post_response_buffer);
+    sprintf(left_request, "left=%s", left_response);
+    sprintf(right_request, "&right=%s", right_response);
+    sprintf(up_request, "&up=%s", up_response);
+    sprintf(down_request, "&down=%s", down_response);
+    strcat(json_body, left_request);
+    strcat(json_body, right_request);
+    strcat(json_body, up_request);
+    strcat(json_body, down_request);
+    int body_len = strlen(json_body);
+    Serial.println(json_body);
+    post_request_buffer[0] = '\0';
+    post_response_buffer[0] = '\0';
+    sprintf(post_request_buffer, "POST http://608dev-2.net/sandbox/sc/team26/server_src/get_gesture.py HTTP/1.1\r\n");
+    strcat(post_request_buffer, "Host: 608dev-2.net\r\n");
+    strcat(post_request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
+    char content_leng[50]="";
+    sprintf(content_leng, "Content-Length: %d\r\n\r\n", body_len);
+    strcat(post_request_buffer, content_leng);
+    strcat(post_request_buffer, json_body);
+    do_http_request("608dev-2.net", post_request_buffer, post_response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);      
+    memset(json_body, 0, sizeof(json_body));
+    post_response_buffer[strlen(post_response_buffer)-1]='\0';
+    
+    if(strcmp(post_response_buffer, "-1")!=0){
+      strcat(gesture_sequence, post_response_buffer);
+      strcat(gesture_sequence, ",");
+    }
+    Serial.println(gesture_sequence);
   }  
   
   
@@ -301,7 +343,7 @@ void averaging_filter(float input, float* stored_values, int array_size) {
     stored_values[0]=input;
 }
 char dir_measurements[10000] = "";
-void check_gesture(int array_size, float* dir_sequence, char* direction){
+void check_gesture(int array_size, float* dir_sequence, char* direction, char* response){
     memset(dir_measurements, 0, sizeof(dir_measurements));
     for (int i = 0; i<array_size; ++i){
       char dir_measurement[5] = "";
@@ -309,6 +351,7 @@ void check_gesture(int array_size, float* dir_sequence, char* direction){
       strcat(dir_measurements, dir_measurement);
     }
     sprintf(json_body, "check=true&direction=%s&accel_sequence=", direction);    
+    Serial.println(strlen(dir_measurements));
     strcat(json_body, dir_measurements);
     int body_len = strlen(json_body);
     Serial.println(json_body);
@@ -323,7 +366,8 @@ void check_gesture(int array_size, float* dir_sequence, char* direction){
     strcat(post_request_buffer, json_body);
     do_http_request("608dev-2.net", post_request_buffer, post_response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
     post_response_buffer[strlen(post_response_buffer)-1]='\0';
-    Serial.println("HERE");
+    sprintf(response, post_response_buffer);
     memset(json_body, 0, sizeof(json_body));
+
 }
 
