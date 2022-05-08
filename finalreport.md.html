@@ -1,0 +1,285 @@
+<meta charset="utf-8" emacsmode="-*- markdown -*-">
+**SmartSecuritySystem - Final Report**
+
+Our Smart Security System aims at making your home more secure. You might have seen in the Incredibles movie 
+Edna Mode entering a sequence of passwords in order to enter into her high security costume testing room and show Elastigirl the costumes she had designed for her family. What our project 
+tries to achieve is something very similar. In order to get access to a door, you need to go through several security layers
+to verify that you are eligible for access. 
+
+
+![Full System Video]()
+
+Overview
+===============================================================================
+As mentioned briefly in the introduction, the goal of our project was to design a multi-layer security system for accessing doors.
+
+More specifically, our system has the following security layers. First of all, the user needs to tap his card or fob on an RFID
+scanner. Upon tapping the card, the system will either accept or reject the card. If the card is rejected, then the user cannot enter the door.
+If, however, the card is accepted, then the user will be prompted to go through the next layer of security, which is entering a passcode. If the user enters 
+the correct passcode he will move to the next security layer, which is speaking a passcode to the microphone. Once he gets authenticates he will move to the final 
+security layer which is moving the esp in a certain pattern. Once he has gone through all of these security layers, he gets access to the door, and the door opens.
+
+It is important to note that each passcode is chosen by the user himself by accessing our website, where he can change and see his passwords, as well as which doors he has access to.
+
+Additionally, our system supports an additional user, the Admin that has access to all the doors, and can assign and remove 
+access for the users from different doors.
+
+Documentation
+===============================================================================
+
+
+## TODO: State Machine Diagrams
+
+## TODO: Block Diagrams
+
+Server Side
+===============================================================================
+
+## Interfacer
+
+
+## Authentication
+
+
+## Database Requests
+
+## Admin
+
+The purpose of the admin page is to let the admin give and remove access of users from certain esps.
+
+To get to the admin page we use an html button of type submit, that when pressed sends us to another file called admin.py.
+
+### Displaying Board Access
+
+To display which esps each player has access to we do the following.
+
+First we get all usernames for the user table.
+
+The we select all the boards from the doors_user_table, which will contain all boards, since admin has access to all of them.
+
+Then for each username, we get all the doors that the username has access to from the doors_users_table and put them in a set called allowed_doors.
+
+Then for each door in the system, we check if it belongs in the allowed_doors set, if it does we display it in the html with a filled checkbox, and if it doesn't we display it with an unfilled checkbox.
+
+For each user, the checkboxes, corresponding to the each door belong to a single form, with a single submit button that when pressed, sends a post request with the information of this form.
+
+### changing Board access
+
+To change access, you check which doors you want to give access to and you un-check all doors you want to remove access from.
+
+Once you have done that for a single user, then you have to submit the user's button that will send a post request it the admin.py page, to a update the access accordingly.
+
+Once the admin.py page receives the post request, it first checks that the post request doesn't correspond to the post request for accessing admin.py from interfacer.py. Then, it gets the username of the user the changes were made for. Then, it removes access to all doors for this username by deleting in the table doors_users_table, all entries with username as username. Then it iterates over all keys in the post response, that are not a username, and gives access to username for this doors, by calling add_door_access which inserts into the door_users_table the door and the username, as shown in the code below.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+for elt in request["form"]:
+    if elt != "username":
+        action = request["form"][elt]          
+        if(action == "on"):
+            add_door_access(int(elt), username)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finally, we have a button that when clicked sends us back to the interfacer.py page.
+
+
+## Profile
+
+Users can log in to the website and change their credentials: password, pincode, etc..
+This is done in `profile.py` as follows:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+new_password = request['form']['new_password']
+new_pincode = request['form']['pincode']
+update_credentials(username, password, {'pincode': new_pincode, 'password': new_password})
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The `update_credentials` function in `authentication.py` then connects to the database and update the information accordingly:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def update_credentials(username, password, data):
+    # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
+    with sqlite3.connect(database) as c:
+        object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
+        if "pincode" not in data:
+            data["pincode"] = object[2]
+        c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
+        c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
+    return "Password Updated Successfully"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+## Gestures
+
+### Getting training sequence and correlation of a sequence
+
+A gesture sequence consists of a sequence of acceleration measurements.
+
+Recognizing a gesture consits of two parts. The first one is training the default acceleration sequence against
+which each gesture will be compared. We train one such sequence for each direction, up, down, left, right as described
+in section 4.5 of this report, in the ESP side of the gestures functionality. The second one is checking the sequence entered
+against all the default acceleration sequences for each gestures by computing their correlation.
+
+The server receives any acceleration sequence as a string of accelerations separated by commas. 
+It removes the trailing comma at the end, and then splits at the commas, reverses the list, because the incoming 
+array is in reverse of the actual measurement sequence, and then joins the reversed list with commas.
+
+In order for the server to distinguish between when it is receiving an acceleration training sequence, or an acceleration sequence it has to compare with we use two different POST requests.
+
+When we pass the sequence to train,  the request has the following parameters: training, username, and accel_sequence.
+
+When we pass the sequence to compute the correlation, the request has the following parameters: check, direction, and accel_sequence.
+
+When the server receives a request with the training parameter, it adds the acceleration sequence to the database. First I delete a sequence from that database for the same direction and then I update it with the new sequence.
+ 
+When the server receives a request with the check parameter, it selects from the gestures databes the default acceleration sequence for the direction passed in the post request. Then it computes the correlation of the passed in sequence with respect to
+the default sequence.
+
+To compute the acceleration, we use the functions implemented in the regular exercises.
+
+### Finding gesture from correlations
+
+Once the correlation of a sequence against all the default gestures has been calculated, the esp sends a post request
+to another server file, get_gesture.py, which finds the maximum correlation, and if that correlation is greater than a threshold of
+0.3, it returns the corresponding gesture.
+
+
+ESP Side
+===============================================================================
+
+## Password Chaining
+
+## Card Reader
+
+We have connected the RFID such that its SDA pin is connected to pin 34 and its RST pin is connected to pin 20.
+
+To communicate RFID we use the library MFRC522.h.
+
+First we create an mfrc522 class that handles the communication with the RFID.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+MFRC522 mfrc522(SS_PIN, RST_PIN);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once a card has been read, we iterate over its userid tag to check that it is the same as the uid of one of the allowed cards, in the following way.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+char cardcontent[1000] = "";
+byte letter;
+for (byte i = 0; i < mfrc522.uid.size; i++) 
+{
+    if(mfrc522.uid.uidByte[i] < 0x10){
+    strcat(cardcontent, " 0");
+    }
+    else{
+    strcat(cardcontent, " ");
+    }
+    char prefix[200]="";
+    sprintf(prefix, "%02X", mfrc522.uid.uidByte[i]);
+    strcat(cardcontent, prefix);
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We first create a cardcontent variable to keep the userid of the card that was scanned.
+
+We look at every byte of the user id which is in hex, and then we sprintf each byte in hex representation to a string, which we then add to the end of cardcontent. Depending on how large the byte is wes either add a 0 infront of its string representation or not.
+
+Depending on whether the the resulting string after reading the card contents matches the stored user id, we proceed to opening the door or not.
+
+
+## Pin Input
+
+## Speech Input
+
+## Gestures Input
+
+### Finding the "default" movement accelerations
+
+To get the default acceleration sequence against which we will compute the correlation we do the following.
+
+First of all we sample the x, y, z acceleration every 30 milliseconds.
+
+Then we have connected a button to pin 45 that is a classy button as implemented in our regular exercise.
+
+A long press of the button starts the recording of the acceleration data. A short press ends the recording and sends the sequence to the server to be stored on a database.
+
+The way we start collecting data is the following. When we detect a long press we set a variable called measure to true.
+
+If measure is true, we add acceleration data to an array called measurements.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+if(measure){
+    char measurement[10]="";
+    sprintf(measurement, "%4.2f,", x);
+    strcat(str_measurements, measurement);
+    measurements[iter]=x;
+    iter+=1;
+  }
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If short press, we stop measuring, do post request and reset measurements to empty.
+
+In the json body each time we specify a different direction we change the direction part of the request as mentioned in the code snippet below.
+
+Then we do the post request.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ if (input == 1){
+    measure = false;
+    // manually change direction for each direction I try to learn
+    sprintf(json_body, "training=true&direction=right&accel_sequence=");
+    strcat(json_body, str_measurements);
+    // Doing post request here
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### Capturing an esp movement
+
+To capture a movement with the esp we do the following. We have an array called left_sequence, right_sequence, ...
+That has the length of the default sequence stored in the database for each movement.
+
+We update each of these arrays in a way similar to the running average example. Everytime we sample a 
+new acceleration measurement, we add it to the front of the array, and remove the last element of the array.
+
+When we press a short click we send the current state of each sequence to the server to compute the correlation of each direction gesture with the inputed sequence. More specifically, we send a separate post request for each direction, and get the correlation of the stored sequence with respect to the default sequence.
+
+
+## Servo
+
+The servo is connected to pin 21.
+
+The purpose of the servo is to open and close the door as demonstrated in the video in this google drive.
+
+The servo operation is handled by the operate_door function.
+
+If the door is open and the button has been pressed to close to board, we rotate the servo as shown in the code below, by gradually changing its position, and then set the door to be closed.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+for (pos = pos_max; pos >= pos_min; pos -= 1) { // goes from 180 degrees to 0 degrees
+    ledcWrite(pwm_channel, pos);    // tell servo to go to position in variable 'pos'
+    delay(50);             // waits 15ms for the servo to reach the position
+}
+doorOpen = !doorOpen;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+If the door is closed and the rfid authorizes access, door gradually opens, by doing the opposite from the above code, instead of pos-=1, we do pos+=1.
+
+Weekly Deliverable Milestones
+===============================================================================
+
+## Week 1
+
+## Week 2
+
+## Week 3
+
+## Week 4
+
+
+Team Members
+===============================================================================
+
+* Demetrios Kriezis
+* Hayford Akomeah
+* Kasra Mazaheri
+* Muhender Raj Rajvee
+* Vlada Petrusenko
+
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
