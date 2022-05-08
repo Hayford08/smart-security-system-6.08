@@ -14,7 +14,7 @@
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
-char network[] = "EECS-Lounges";
+char network[] = "MIT";
 char password[] = "";
 /* Having network issues since there are 50 MIT and MIT_GUEST networks?. Do the following:
     When the access points are printed out at the start, find a particularly strong one that you're targeting.
@@ -89,7 +89,7 @@ const double BASELINE = 11.7;
 const float ZOOM = 9.81; // for display (converts readings into m/s^2)...used for visualizing only
 int global_steps = 0;
 uint8_t LCD_PWM = 0, LCD_CONTROL = 21;
-char *username;
+char username[100];
 
 void setup()
 {
@@ -201,47 +201,43 @@ void security_system_fsm()
 {
   switch (state)
   {
-  case LOCKED:
+  case LOCKED: {
     state = TAP;
     sprintf(output, "LOCKED");
     textInput = TextInputProcessor(BUTTON1);
     pinInput = PinInputProcessor(BUTTON1);
+    }
     break;
 
-  case TAP: // Tap Card
-    scanner.loop();
+  case TAP: {// Tap Card
     sprintf(output, "Please Tap Card"); 
-    scanner.newcard[0]='\0';
-    delay(3000);
-    sprintf(scanner.newcard, "73 25 A1 31");  
+    //scanner.newcard[0]='\0';
+    //delay(3000);
+    scanner.loop();
+    //sprintf(scanner.newcard, "73 25 A1 31");  
     //scanner.newcard = "73 25 A1 31"; // hard coding for now
-    if (scanner.newcard[0] != '\0')
-    {
-      multipass.set_auth_method(GETUSERNAME); //0 -- getting username
+    if (scanner.newcard[0] != '\0') {
       Serial.printf("Id tapped: %s\n", scanner.newcard);
-      
-      // Request username from authentification 
-      multipass.post_request_authentification(scanner.newcard);
-
-      Serial.printf("Username: %s\n", multipass.get_username());
-      username = multipass.get_username();
+      multipass.get_username(scanner.newcard, username);
+      Serial.printf("Username: %s\n", username);
 
       //username = "hayford";
       state = PIN;
-      if (strcmp(username, "")){ // username is not empty
-        Serial.println("ABOUT TO GET AUTH!!!");
-        multipass.set_auth_method(AUTHMETHODS); //leave for later
-        multipass.post_request_authentification(); //leave for later
-        if (scanner.accessAuthorized)
-        {
-          Serial.println("access granted");
-          scanner.reset();
-          state = PIN;
-        }
+      if (username[0] != '\0') { // username is not empty
+        Serial.println("ABOUT TO GET AUTH METHODS!!!");
+        multipass.get_auth_methods(username);
+        // if (scanner.accessAuthorized) {
+        //   Serial.println("access granted");
+        //   scanner.reset();
+        //   state = PIN;
+        // }
+        Serial.println("Going to pin");
+        scanner.reset();
       }
     }
+    }
     break;
-  case PIN: // Enter text with imu
+  case PIN:{ // Enter text with imu
     // Read imu data
     int16_t data[3];
     output[0] = '\0';
@@ -272,17 +268,18 @@ void security_system_fsm()
 
     // char lower[100];
     // to_lower(textInput.getCurrentText(), lower);
-    multipass.set_auth_method(PINCODE);
-    multipass.post_request_authentification(pinInput.getCurrentText(), username);
-    if (multipass.is_auth_valid)
-    {
+    // multipass.set_auth_method(PINCODE);
+    bool result = multipass.authenticate_by_pincode(username, pinInput.getCurrentText());
+    if (result) {
       state = TEXT;
-      door.open_door();
+      //door.open_door();
+    }
     }
     break;
 
-  case TEXT: // Enter text with imu
+  case TEXT: { // Enter text with imu
     // Read imu data
+    int16_t data[3];
     imu.readAccelData(data); // readGyroData(data);
     x = ZOOM * data[0] * imu.aRes;
     y = ZOOM * data[1] * imu.aRes;
@@ -313,9 +310,10 @@ void security_system_fsm()
       state = UNLOCKED;
       door.open_door();
     }
+    }
     break;
 
-  case UNLOCKED:
+  case UNLOCKED: {
     // If button 2 is pressed, lock the door
     Serial.println("unlocked");
     sprintf(output, "unlocked");
@@ -325,6 +323,7 @@ void security_system_fsm()
       Serial.println("locking");
       state = LOCKED;
       door.close_door();
+    }
     }
     break;
   }
