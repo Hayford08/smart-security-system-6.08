@@ -21,6 +21,7 @@ def request_handler(request):
                 c.execute("INSERT INTO gesture_acceleration(direction, sequence) VALUES(?,?)", (direction, acceleration_data))
             return acceleration_data
         ## HERE compute correlation
+
         if "check" in request["form"]:
             acceleration_data = request["form"]["accel_sequence"]
             acceleration_data = acceleration_data[:-1]
@@ -33,6 +34,7 @@ def request_handler(request):
                 default_sequence = c.execute("""SELECT sequence FROM gesture_acceleration WHERE direction = ? """, (request["form"]["direction"],)).fetchone()[0];
                 default_sequence = default_sequence.split(",");
                 float_def_sequence = [float(x) for x in default_sequence]
+                
                 return correlation(float_accel_data, float_def_sequence)
                 # if correlation(float_accel_data, float_def_sequence) > 0.1:
                 #     return request["form"]["direction"]
