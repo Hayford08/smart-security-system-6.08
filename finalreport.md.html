@@ -40,6 +40,7 @@ Server Side
 
 ## Authentication
 
+
 ## Database Requests
 
 ## Admin
@@ -83,8 +84,60 @@ Finally, we have a button that when clicked sends us back to the interfacer.py p
 
 ## Profile
 
+Users can log in to the website and change their credentials: password, pincode, etc..
+This is done in `profile.py` as follows:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+new_password = request['form']['new_password']
+new_pincode = request['form']['pincode']
+update_credentials(username, password, {'pincode': new_pincode, 'password': new_password})
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The `update_credentials` function in `authentication.py` then connects to the database and update the information accordingly:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def update_credentials(username, password, data):
+    # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
+    with sqlite3.connect(database) as c:
+        object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
+        if "pincode" not in data:
+            data["pincode"] = object[2]
+        c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
+        c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
+    return "Password Updated Successfully"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 ## Gestures
+
+### Getting training sequence and correlation of a sequence
+
+A gesture sequence consists of a sequence of acceleration measurements.
+
+Recognizing a gesture consits of two parts. The first one is training the default acceleration sequence against
+which each gesture will be compared. We train one such sequence for each direction, up, down, left, right as described
+in section 4.5 of this report, in the ESP side of the gestures functionality. The second one is checking the sequence entered
+against all the default acceleration sequences for each gestures by computing their correlation.
+
+The server receives any acceleration sequence as a string of accelerations separated by commas. 
+It removes the trailing comma at the end, and then splits at the commas, reverses the list, because the incoming 
+array is in reverse of the actual measurement sequence, and then joins the reversed list with commas.
+
+In order for the server to distinguish between when it is receiving an acceleration training sequence, or an acceleration sequence it has to compare with we use two different POST requests.
+
+When we pass the sequence to train,  the request has the following parameters: training, username, and accel_sequence.
+
+When we pass the sequence to compute the correlation, the request has the following parameters: check, direction, and accel_sequence.
+
+When the server receives a request with the training parameter, it adds the acceleration sequence to the database. First I delete a sequence from that database for the same direction and then I update it with the new sequence.
+ 
+When the server receives a request with the check parameter, it selects from the gestures databes the default acceleration sequence for the direction passed in the post request. Then it computes the correlation of the passed in sequence with respect to
+the default sequence.
+
+To compute the acceleration, we use the functions implemented in the regular exercises.
+
+### Finding gesture from correlations
+
+Once the correlation of a sequence against all the default gestures has been calculated, the esp sends a post request
+to another server file, get_gesture.py, which finds the maximum correlation, and if that correlation is greater than a threshold of
+0.3, it returns the corresponding gesture.
 
 
 ESP Side
@@ -133,6 +186,58 @@ Depending on whether the the resulting string after reading the card contents ma
 ## Pin Input
 
 ## Speech Input
+
+## Gestures Input
+
+### Finding the "default" movement accelerations
+
+To get the default acceleration sequence against which we will compute the correlation we do the following.
+
+First of all we sample the x, y, z acceleration every 30 milliseconds.
+
+Then we have connected a button to pin 45 that is a classy button as implemented in our regular exercise.
+
+A long press of the button starts the recording of the acceleration data. A short press ends the recording and sends the sequence to the server to be stored on a database.
+
+The way we start collecting data is the following. When we detect a long press we set a variable called measure to true.
+
+If measure is true, we add acceleration data to an array called measurements.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+if(measure){
+    char measurement[10]="";
+    sprintf(measurement, "%4.2f,", x);
+    strcat(str_measurements, measurement);
+    measurements[iter]=x;
+    iter+=1;
+  }
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If short press, we stop measuring, do post request and reset measurements to empty.
+
+In the json body each time we specify a different direction we change the direction part of the request as mentioned in the code snippet below.
+
+Then we do the post request.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ if (input == 1){
+    measure = false;
+    // manually change direction for each direction I try to learn
+    sprintf(json_body, "training=true&direction=right&accel_sequence=");
+    strcat(json_body, str_measurements);
+    // Doing post request here
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### Capturing an esp movement
+
+To capture a movement with the esp we do the following. We have an array called left_sequence, right_sequence, ...
+That has the length of the default sequence stored in the database for each movement.
+
+We update each of these arrays in a way similar to the running average example. Everytime we sample a 
+new acceleration measurement, we add it to the front of the array, and remove the last element of the array.
+
+When we press a short click we send the current state of each sequence to the server to compute the correlation of each direction gesture with the inputed sequence. More specifically, we send a separate post request for each direction, and get the correlation of the stored sequence with respect to the default sequence.
+
 
 ## Servo
 
