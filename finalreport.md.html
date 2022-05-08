@@ -1,0 +1,180 @@
+<meta charset="utf-8" emacsmode="-*- markdown -*-">
+**SmartSecuritySystem - Final Report**
+
+Our Smart Security System aims at making your home more secure. You might have seen in the Incredibles movie 
+Edna Mode entering a sequence of passwords in order to enter into her high security costume testing room and show Elastigirl the costumes she had designed for her family. What our project 
+tries to achieve is something very similar. In order to get access to a door, you need to go through several security layers
+to verify that you are eligible for access. 
+
+
+![Full System Video]()
+
+Overview
+===============================================================================
+As mentioned briefly in the introduction, the goal of our project was to design a multi-layer security system for accessing doors.
+
+More specifically, our system has the following security layers. First of all, the user needs to tap his card or fob on an RFID
+scanner. Upon tapping the card, the system will either accept or reject the card. If the card is rejected, then the user cannot enter the door.
+If, however, the card is accepted, then the user will be prompted to go through the next layer of security, which is entering a passcode. If the user enters 
+the correct passcode he will move to the next security layer, which is speaking a passcode to the microphone. Once he gets authenticates he will move to the final 
+security layer which is moving the esp in a certain pattern. Once he has gone through all of these security layers, he gets access to the door, and the door opens.
+
+It is important to note that each passcode is chosen by the user himself by accessing our website, where he can change and see his passwords, as well as which doors he has access to.
+
+Additionally, our system supports an additional user, the Admin that has access to all the doors, and can assign and remove 
+access for the users from different doors.
+
+Documentation
+===============================================================================
+
+
+## TODO: State Machine Diagrams
+
+## TODO: Block Diagrams
+
+Server Side
+===============================================================================
+
+## Interfacer
+
+
+## Authentication
+
+## Database Requests
+
+## Admin
+
+The purpose of the admin page is to let the admin give and remove access of users from certain esps.
+
+To get to the admin page we use an html button of type submit, that when pressed sends us to another file called admin.py.
+
+### Displaying Board Access
+
+To display which esps each player has access to we do the following.
+
+First we get all usernames for the user table.
+
+The we select all the boards from the doors_user_table, which will contain all boards, since admin has access to all of them.
+
+Then for each username, we get all the doors that the username has access to from the doors_users_table and put them in a set called allowed_doors.
+
+Then for each door in the system, we check if it belongs in the allowed_doors set, if it does we display it in the html with a filled checkbox, and if it doesn't we display it with an unfilled checkbox.
+
+For each user, the checkboxes, corresponding to the each door belong to a single form, with a single submit button that when pressed, sends a post request with the information of this form.
+
+### changing Board access
+
+To change access, you check which doors you want to give access to and you un-check all doors you want to remove access from.
+
+Once you have done that for a single user, then you have to submit the user's button that will send a post request it the admin.py page, to a update the access accordingly.
+
+Once the admin.py page receives the post request, it first checks that the post request doesn't correspond to the post request for accessing admin.py from interfacer.py. Then, it gets the username of the user the changes were made for. Then, it removes access to all doors for this username by deleting in the table doors_users_table, all entries with username as username. Then it iterates over all keys in the post response, that are not a username, and gives access to username for this doors, by calling add_door_access which inserts into the door_users_table the door and the username, as shown in the code below.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+for elt in request["form"]:
+    if elt != "username":
+        action = request["form"][elt]          
+        if(action == "on"):
+            add_door_access(int(elt), username)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finally, we have a button that when clicked sends us back to the interfacer.py page.
+
+
+## Profile
+
+
+## Gestures
+
+
+ESP Side
+===============================================================================
+
+## Password Chaining
+
+## Card Reader
+
+We have connected the RFID such that its SDA pin is connected to pin 34 and its RST pin is connected to pin 20.
+
+To communicate RFID we use the library MFRC522.h.
+
+First we create an mfrc522 class that handles the communication with the RFID.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+MFRC522 mfrc522(SS_PIN, RST_PIN);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once a card has been read, we iterate over its userid tag to check that it is the same as the uid of one of the allowed cards, in the following way.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+char cardcontent[1000] = "";
+byte letter;
+for (byte i = 0; i < mfrc522.uid.size; i++) 
+{
+    if(mfrc522.uid.uidByte[i] < 0x10){
+    strcat(cardcontent, " 0");
+    }
+    else{
+    strcat(cardcontent, " ");
+    }
+    char prefix[200]="";
+    sprintf(prefix, "%02X", mfrc522.uid.uidByte[i]);
+    strcat(cardcontent, prefix);
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We first create a cardcontent variable to keep the userid of the card that was scanned.
+
+We look at every byte of the user id which is in hex, and then we sprintf each byte in hex representation to a string, which we then add to the end of cardcontent. Depending on how large the byte is wes either add a 0 infront of its string representation or not.
+
+Depending on whether the the resulting string after reading the card contents matches the stored user id, we proceed to opening the door or not.
+
+
+## Pin Input
+
+## Speech Input
+
+## Servo
+
+The servo is connected to pin 21.
+
+The purpose of the servo is to open and close the door as demonstrated in the video in this google drive.
+
+The servo operation is handled by the operate_door function.
+
+If the door is open and the button has been pressed to close to board, we rotate the servo as shown in the code below, by gradually changing its position, and then set the door to be closed.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+for (pos = pos_max; pos >= pos_min; pos -= 1) { // goes from 180 degrees to 0 degrees
+    ledcWrite(pwm_channel, pos);    // tell servo to go to position in variable 'pos'
+    delay(50);             // waits 15ms for the servo to reach the position
+}
+doorOpen = !doorOpen;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+If the door is closed and the rfid authorizes access, door gradually opens, by doing the opposite from the above code, instead of pos-=1, we do pos+=1.
+
+Weekly Deliverable Milestones
+===============================================================================
+
+## Week 1
+
+## Week 2
+
+## Week 3
+
+## Week 4
+
+
+Team Members
+===============================================================================
+
+* Demetrios Kriezis
+* Hayford Akomeah
+* Kasra Mazaheri
+* Muhender Raj Rajvee
+* Vlada Petrusenko
+
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
