@@ -67,7 +67,6 @@ def request_handler(request):
     if request["method"] == "POST" and not 'profile' in request['form']:
         # check if it is log out
         if 'logout' in request['form']:
-            # delete_user_session(user_hash)
             return login_form(delete_session=True)
         else:
             # if not user_info: # Ignore login requests when the user is already logged in

@@ -36,7 +36,23 @@ Server Side
 ===============================================================================
 
 ## Interfacer
+The interfacer.py is interactive page for the user on the website. This file is where GET and POST requests are accomplished. It's 
+also the file that calls all the authentication processing that needs to be checked before the username is granted access to the 
+webpage. 
 
+For first time login, a login form is returned to the user to fill. The user enters their username and password and click submit for 
+the credentials to be verified. To verify the credentials, authenticate_login is called with the username and password. If the result is
+returned to be True, then the user's webpage showing the doors they have access to, their credentials for logging into the security system
+on the ESP, and the option to their profile. However, if the result is False, the appropriate message is shown to the user. 
+
+Below is an image of what is shown on the webpage upon login: 
+
+<img src="Front_page_on_the_server.png"
+     alt="Front page on a user on the server"
+     style="float: left; margin-right: 10px;" />
+
+The interfacer gives an extra layout for an Admin. Upon logging as an Admin, this user can enter Admin mode and decide who has access
+to which door. 
 
 
 ## Sessions
