@@ -13,13 +13,13 @@ Overview
 ===============================================================================
 As mentioned briefly in the introduction, the goal of our project was to design a multi-layer security system for accessing doors.
 
-More specifically, our system has the following security layers. First of all, the user needs to tap his card or fob on an RFID
+More specifically, our system has the following security layers: the user first taps their card or fobs on an RFID
 scanner. Upon tapping the card, the system will either accept or reject the card. If the card is rejected, then the user cannot enter the door.
 If, however, the card is accepted, then the user will be prompted to go through the next layer of security, which is entering a passcode. If the user enters 
-the correct passcode he will move to the next security layer, which is speaking a passcode to the microphone. Once he gets authenticates he will move to the final 
-security layer which is moving the esp in a certain pattern. Once he has gone through all of these security layers, he gets access to the door, and the door opens.
+the correct passcode, they will move to the next security layer, which is speaking a passphrase to the microphone. Once they get authenticated, they will move to the final 
+security layer which is moving the esp in a certain pattern. Once they have gone through all of these security layers, they get access to the door, and the door opens.
 
-It is important to note that each passcode is chosen by the user himself by accessing our website, where he can change and see his passwords, as well as which doors he has access to.
+It is important to note that each passcode is chosen by the user themself by accessing our website, where they can change and see their passwords, as well as which doors they have access to.
 
 Additionally, our system supports an additional user, the Admin that has access to all the doors, and can assign and remove 
 access for the users from different doors.
@@ -36,15 +36,97 @@ Server Side
 ===============================================================================
 
 ## Interfacer
+The interfacer.py is interactive page for the user on the website. This file is where GET and POST requests are accomplished. It's 
+also the file that calls all the authentication processing that needs to be checked before the username is granted access to the 
+webpage. 
+
+For first time login, a login form is returned to the user to fill. The user enters their username and password and click submit for 
+the credentials to be verified. To verify the credentials, authenticate_login is called with the username and password. If the result is
+returned to be True, then the user's webpage showing the doors they have access to, their credentials for logging into the security system
+on the ESP, and the option to their profile. However, if the result is False, the appropriate message is shown to the user. 
+
+Below is an image of what is shown on the webpage upon login: 
+
+<img src="Front_page_on_the_server.png"
+     alt="Front page on a user on the server"
+     style="float: left; margin-right: 10px;" />
+
+The interfacer gives an extra layout for an Admin. Upon logging as an Admin, this user can enter Admin mode and decide who has access
+to which door. 
 
 
 ## Sessions
+
+We started by implementing sessions which allows the user to come back to the website already logged in with their credentials. This was
+being done by storing a universally unique identifier (UUID) from which the user accessed the webpage, username, and password. When a get request
+is made from the user, we check if that UUID has been seen before or not. If it has, we retrieve their session information from the database. 
+However, we run into a problem where multiple users could not be on the webpage as the concurrently. This is because the code (shown below) that was used to generate the UUID 
+for each user was providing the unique identifier for the server. 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_id():
+    """
+    This function returns the unique id for the computer the user uses
+    """
+    return hash(uuid.UUID(int=uuid.getnode()))
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A different approach was introduced to still allow the user to return to their session when they have not logged out. This was achieved by 
+using a localStorage. Each new login stores the user's username and password. Then for each new GET request, their localStorage is checked
+if there is a username and password already stored. If so, these information are used to retrieve the user information on the database and 
+will not be prompt to log in until they log out, where their localStorage is cleared. 
 
 
 ## Authentication
 
 
 ## Database Requests
+
+The database request file is the access point for all requests that need access to the 
+databases used in this project. It contains requests on the following databases:
+<ul>
+    <li>session_db -- used for storing the user_hash, username, and password</li>
+    <li>door_access_db -- used for storing the username and associated door_id</li>
+    <li>database -- used for storing username, password, pincode, voice_phrase, is_admin, card_id, and gesture</li>
+</ul>
+
+The prominent request that the database_request processes is getting the user's door accesses. The function, shown below, illustrates
+how given the username, the doors that the user has access to is retrieved and returned as string in an html format.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_user_door_access_input(username):
+    """
+    This function takes in a username and returns all the doors that the user has access to as
+    an html checkbox type
+    """
+    door_data = []
+    with sqlite3.connect(door_access_db) as c:
+        door_data = c.execute('''SELECT door_id FROM door_user_table WHERE username = ?;''', (username,)).fetchall()
+    
+    allowed_doors = set()
+    for door_id in door_data:
+        allowed_doors.add(door_id[0])
+    
+    door_list = f'''<form method = "post" action="admin.py"> <input name = 'username' type = "hidden" value ={username}>'''
+    for door_id in get_all_doors():
+        if door_id[0] in allowed_doors:
+            door_list += f'''<div><input type="checkbox" id={str(door_id[0])} name = {str(door_id[0])} checked> Door {str(door_id[0])} </label></div> '''
+        else:
+            door_list += f'''<div><input type="checkbox" id={str(door_id[0])} name = {str(door_id[0])}> Door {str(door_id[0])} </label></div> '''
+    door_list += f'''<input type="submit" value="Update {username}'s access">'''
+    door_list += '''</form>'''
+    return door_list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Other functions that are called in used in the project include: 
+<ul>
+    <li>get_all_doors</li>
+    <li>remove_door_access</li>
+    <li>add_door_access</li>
+    <li>check_admin</li>
+</ul>
+
+These functions allows processing information back and forth between the server, ESP, and webpage more efficient and collision-free.
 
 ## Admin
 
