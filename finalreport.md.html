@@ -128,6 +128,42 @@ Other functions that are called in used in the project include:
 
 These functions allows processing information back and forth between the server, ESP, and webpage more efficient and collision-free.
 
+## Data Driven Side of the project
+
+This project involved incorporating data to decide what works and what doesn't. For example, even though we logged in on our personal computers, we
+realized that the user_hash was the same, and this made us realized that storing user session on the server will not be the better approach of 
+getting sessions on the website. The image below shows the user_hash of Admin logged in multiple times on different laptops but having the same user_hash:
+
+<img src="User_hash_being_the_same_on_different_laptops.png"
+     alt="user hash having the same value"
+     style="margin-right: 10px; height: 60%;" />
+
+This led to using localStorage in storing sessions on the user's personal browser instead on our server. This led to a working access to 
+multiple users on the server. 
+
+Again, in order to decide which acceleration values correspond to different gesture movements, we stored the direction and sequences that made us 
+know which treshold value to use as right, left, up, or down. The database below show the sequences that we used in training our model to determine 
+directions
+
+<img src="Direction_sequences.png"
+     alt="Direction and sequences gotten during training"
+     style="margin-right: 10px; height: max-content;"/>
+
+With this training model in place, we were able to assign different gesture_password to the users we have on the server: 
+
+<img src="users_and_passwords.png"
+     alt="Users and their passwords"
+     style="margin-right: 10px;"/>
+
+
+We also used our database to store the door access given to each user on the user. This allowed to admin to modify and control who 
+has access to which door. This helped in controlling the security and safety of the authorized users on the server:
+
+<img src="users_and_door_access.png"
+     alt="Users and their door access"
+     style="margin-right: 10px; height: 50%;"/>
+
+
 ## Admin
 
 The purpose of the admin page is to let the admin give and remove access of users from certain esps.
@@ -344,6 +380,7 @@ doorOpen = !doorOpen;
 
 
 If the door is closed and the rfid authorizes access, door gradually opens, by doing the opposite from the above code, instead of pos-=1, we do pos+=1.
+
 
 Weekly Deliverable Milestones
 ===============================================================================
