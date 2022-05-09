@@ -19,14 +19,15 @@ def do_post_request(username, password, message_to_display=None):
     data={'username': username, 'password': password}
     try:
         # Create a session for current log in 
-        create_user_session(user_hash, username, password)
+        # create_user_session(user_hash, username, password)
 
         # Doors this users have access 
         user_door_access = get_user_door_access(username)
 
         output = f'''<!DOCTYPE html>
         <html>
-        <body>'''
+        <head><script type="text/javascript" src="session.js"></script></head>
+        <body onload="storeCredentials('{username}', '{password}')">'''
 
         admin_button = ''
         if check_admin(username):
@@ -68,26 +69,20 @@ def do_post_request(username, password, message_to_display=None):
 def request_handler(request):
     data={}
     user_hash = get_id()
-    user_info = get_user_info_from_session(user_hash)
+    # user_info = get_user_info_from_session(user_hash)
 
     if request["method"] == "POST" and not 'profile' in request['form']:
         # check if it is log out
         if 'logout' in request['form']:
-            delete_user_session(user_hash)
-            return login_form()
+            # delete_user_session(user_hash)
+            return login_form(delete_session=True)
         else:
-            if not user_info: # Ignore login requests when the user is already logged in
-                username = data["username"] = request["form"]["username"]
-                password = data["password"] = request["form"]["password"]
-                if not authenticate_login(username, password):
-                    return error_login_form()
-                return do_post_request(username, password)
-
-    # Request is a get 
-    # checking for a session
-    if user_info:
-        username, password = user_info[0], user_info[1]
-        return do_post_request(username, password)
+            # if not user_info: # Ignore login requests when the user is already logged in
+            username = data["username"] = request["form"]["username"]
+            password = data["password"] = request["form"]["password"]
+            if not authenticate_login(username, password):
+                return error_login_form()
+            return do_post_request(username, password)
 
     # Ask user to fill login form
-    return login_form()
+    return login_form(delete_session=False)
