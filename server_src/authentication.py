@@ -3,7 +3,7 @@ import sqlite3
 database = '/var/jail/home/team26/server_src/database.db'
 def setup():
     """
-    This is the function to create the default usernames, passwords, pincodes, voice_phrase, and is_admin in the database
+    This is the function to create the default usernames, passwords, pincodes, voice_phrase, is_admin, card_id, and gesture in the database
     """
     values = [('dkriezis', '8130070', '542071', 'banana', 0, 'E0 16 99 1B', 'left'), ('hayford', '5317558', '798333', 'orange', 0, '88 2B 47 E3', 'left'), 
               ("Admin", "Admin", "470236", 'puppy', 1, 'AC EC 64 68', 'left'),  ('vladap', '9466123', '670426', 'rug', 0, '63 E1 B3 31', 'left'), 

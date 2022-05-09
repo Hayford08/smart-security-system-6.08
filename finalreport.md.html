@@ -56,6 +56,7 @@ to which door.
 
 
 ## Sessions
+
 We started by implementing sessions which allows the user to come back to the website already logged in with their credentials. This was
 being done by storing a universally unique identifier (UUID) from which the user accessed the webpage, username, and password. When a get request
 is made from the user, we check if that UUID has been seen before or not. If it has, we retrieve their session information from the database. 
@@ -80,6 +81,52 @@ will not be prompt to log in until they log out, where their localStorage is cle
 
 
 ## Database Requests
+
+The database request file is the access point for all requests that need access to the 
+databases used in this project. It contains requests on the following databases:
+<ul>
+    <li>session_db -- used for storing the user_hash, username, and password</li>
+    <li>door_access_db -- used for storing the username and associated door_id</li>
+    <li>database -- used for storing username, password, pincode, voice_phrase, is_admin, card_id, and gesture</li>
+</ul>
+
+The prominent request that the database_request processes is getting the user's door accesses. The function, shown below, illustrates
+how given the username, the doors that the user has access to is retrieved and returned as string in an html format.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_user_door_access_input(username):
+    """
+    This function takes in a username and returns all the doors that the user has access to as
+    an html checkbox type
+    """
+    door_data = []
+    with sqlite3.connect(door_access_db) as c:
+        door_data = c.execute('''SELECT door_id FROM door_user_table WHERE username = ?;''', (username,)).fetchall()
+    
+    allowed_doors = set()
+    for door_id in door_data:
+        allowed_doors.add(door_id[0])
+    
+    door_list = f'''<form method = "post" action="admin.py"> <input name = 'username' type = "hidden" value ={username}>'''
+    for door_id in get_all_doors():
+        if door_id[0] in allowed_doors:
+            door_list += f'''<div><input type="checkbox" id={str(door_id[0])} name = {str(door_id[0])} checked> Door {str(door_id[0])} </label></div> '''
+        else:
+            door_list += f'''<div><input type="checkbox" id={str(door_id[0])} name = {str(door_id[0])}> Door {str(door_id[0])} </label></div> '''
+    door_list += f'''<input type="submit" value="Update {username}'s access">'''
+    door_list += '''</form>'''
+    return door_list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Other functions that are called in used in the project include: 
+<ul>
+    <li>get_all_doors</li>
+    <li>remove_door_access</li>
+    <li>add_door_access</li>
+    <li>check_admin</li>
+</ul>
+
+These functions allows processing information back and forth between the server, ESP, and webpage more efficient and collision-free.
 
 ## Admin
 
