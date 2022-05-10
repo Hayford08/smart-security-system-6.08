@@ -175,6 +175,10 @@ public:
             
         }  
 
+        if (input == 2) {
+          reset();
+        }
+
         strcpy(gestures, gesture_sequence);
     
         // CHECKING correlation ends here

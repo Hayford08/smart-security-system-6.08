@@ -51,6 +51,9 @@ const char USER[] = "random";
 // char request_buffer[IN_BUFFER_SIZE];   // char array buffer to hold HTTP request
 // char response_buffer[OUT_BUFFER_SIZE]; // char array buffer to hold HTTP response
 
+const int TRANSITION_TIMEOUT = 2000;
+uint32_t transition_timer = millis();
+
 const uint8_t BUTTON1 = 45; // pin connected to button
 const uint8_t BUTTON2 = 39; // pin connected to button
 MPU6050* imu = new MPU6050;                // imu object called, appropriately, imu
@@ -86,6 +89,7 @@ const uint8_t DOWN = 1;  //change if you'd like
 const uint8_t POST = 2;  //change if you'd like*/
 
 char output[100], old_output[100];
+char stage[20] = "locked";
 
 const int UP = 1, DOWN = 0;
 const int REST = 0, PEAK = 1, VALLEY = 2;
@@ -94,6 +98,8 @@ const float ZOOM = 9.81; // for display (converts readings into m/s^2)...used fo
 int global_steps = 0;
 uint8_t LCD_PWM = 0, LCD_CONTROL = 21;
 char username[100];
+
+
 
 void setup()
 {
@@ -177,14 +183,16 @@ void setup()
   multipass.setup();
   gestures.setup(imu);
 
+  sprintf(output, "LOCKED");
+
   textInput = TextInputProcessor(BUTTON1);
   pinInput = PinInputProcessor(BUTTON1);
   pinMode(LCD_CONTROL, OUTPUT);
 }
 
 void loop() {
-  security_system_fsm();
   update_lcd();
+  security_system_fsm();
 
   while (millis() - primary_timer < LOOP_PERIOD); // wait for primary timer to increment
   primary_timer = millis();
@@ -193,14 +201,19 @@ void loop() {
 void security_system_fsm() {
   switch (state) {
   case LOCKED: {
+    if (millis() - transition_timer < TRANSITION_TIMEOUT) break;
     state = TAP;
-    sprintf(output, "LOCKED");
+    sprintf(stage, "locked");
+    sprintf(output, "");
     textInput = TextInputProcessor(BUTTON1);
     pinInput = PinInputProcessor(BUTTON1);
+    transition_timer = millis();
     }
     break;
 
   case TAP: {// Tap Card
+    if (millis() - transition_timer < TRANSITION_TIMEOUT) break;
+    sprintf(stage, "Card Tap"); 
     sprintf(output, "Please Tap Card"); 
     //scanner.newcard[0]='\0';
     //delay(3000);
@@ -217,15 +230,19 @@ void security_system_fsm() {
       //sprintf(username, "hayford");
 //      Serial.printf("k%sk", username);
       //username = "hayford";
-      state = PIN;
       if (username[0] != '\0') { // username is not empty
         if (! multipass.check_access_by_username(username, 78)) {
           sprintf(output, "Access Denied, \n%s", username);
           state = LOCKED;
           break;
         }
+
+        state = PIN;
+
+        sprintf(output, "Hi, %s\n", username);
         
         Serial.println("ABOUT TO GET AUTH METHODS!!!");
+        
         multipass.get_auth_methods(username);
         // if (scanner.accessAuthorized) {
         //   Serial.println("access granted");
@@ -233,18 +250,21 @@ void security_system_fsm() {
         //   state = PIN;
         // }
         Serial.println("Going to pin");
+        transition_timer = millis();
         scanner.reset();
       }
     }
     }
     break;
   case PIN:{ // Enter text with imu
-    // state = GESTURE;
-    // break;
+    //state = GESTURE;
+    //break;
     if (! multipass.is_pincode_needed) {
       state = TEXT;
       break;
     }
+    if (millis() - transition_timer < TRANSITION_TIMEOUT) break;
+    sprintf(stage, "Pincode");
     // Read imu data
     int16_t data[3];
     //output[0] = '\0';
@@ -282,6 +302,7 @@ void security_system_fsm() {
     bool result = multipass.authenticate_by_pincode(username, pinInput.getCurrentText());
     if (result) {
       state = TEXT;
+      transition_timer = millis();
     }
     }
     }
@@ -292,6 +313,8 @@ void security_system_fsm() {
       state = SPEECH;
       break;
     }
+    if (millis() - transition_timer < TRANSITION_TIMEOUT) break;
+    sprintf(stage, "Password");
     // Read imu data
     int16_t data[3];
     imu->readAccelData(data); // readGyroData(data);
@@ -326,6 +349,7 @@ void security_system_fsm() {
     bool result = multipass.authenticate_by_password(username, lower);
     if (result) {
       state = SPEECH;
+      transition_timer = millis();
       //door.open_door();
     }
     }
@@ -336,19 +360,25 @@ void security_system_fsm() {
       state = GESTURE;
       break;
     }
+    if (millis() - transition_timer < TRANSITION_TIMEOUT) break;
+    sprintf(stage, "Speech");
+    sprintf(output, "Push button 1");
 
-    char word_out[50];
-    speechToText.run(word_out);
-    char word_out_lower[50];
-    to_lower(word_out, word_out_lower);
-    word_out_lower[strlen(word_out_lower)-1] = '\0';
-    bool result = multipass.authenticate_by_phrase(username, word_out_lower + 1);
-
-    if (result) {
-      state = GESTURE;
-      // Remove following lines
-      state = UNLOCKED;
-      door.open_door();
+    if (button1.update()) {
+      char word_out[50];
+      speechToText.run(word_out);
+      char word_out_lower[50];
+      to_lower(word_out, word_out_lower);
+      word_out_lower[strlen(word_out_lower)-1] = '\0';
+      bool result = multipass.authenticate_by_phrase(username, word_out_lower + 1);
+  
+      if (result) {
+        state = GESTURE;
+        // Remove following lines
+        state = UNLOCKED;
+        door.open_door();
+        transition_timer = millis();
+      }
     }
     }  
     break;
@@ -358,31 +388,40 @@ void security_system_fsm() {
       state = UNLOCKED;
       door.open_door();  
     }
+    if (millis() - transition_timer < TRANSITION_TIMEOUT) break;
+    sprintf(stage, "Gesture");
     //state = UNLOCKED;  
     char result_gestures[100];
     gestures.record(result_gestures);
+    if (strlen(result_gestures) != 0)
+      result_gestures[strlen(result_gestures)-1] = '\0';
+
+    sprintf(output, result_gestures);
 
     if (button2.update()) {
       bool result = multipass.authenticate_by_gesture(username, result_gestures);
       if (result) {
         state = UNLOCKED;
         door.open_door();
+        transition_timer = millis();
       }
       gestures.reset();
     }
-
     break;
 
   case UNLOCKED: {
+    if (millis() - transition_timer < TRANSITION_TIMEOUT) break;
     // If button 2 is pressed, lock the door
     Serial.println("unlocked");
-    sprintf(output, "unlocked");
+    sprintf(stage, "unlocked");
+    sprintf(output, "");
     if (button2.update() != 0)
     {
       sprintf(output, "locking    ");
       Serial.println("locking");
       state = LOCKED;
       door.close_door();
+      transition_timer = millis();
     }
     }
     break;
@@ -395,6 +434,8 @@ void update_lcd()
   {
     tft.fillScreen(TFT_WHITE); // fill background
     tft.setCursor(0, 0, 4);
+    tft.println(stage);
+    tft.setCursor(0, 25, 4);
     tft.println(output);
     memcpy(old_output, output, sizeof(output));
   }
