@@ -1,6 +1,7 @@
 import sqlite3
 
 database = '/var/jail/home/team26/server_src/database.db'
+door_access_db = '/var/jail/home/team26/server_src/door_access.db'
 def setup():
     """
     This is the function to create the default usernames, passwords, pincodes, voice_phrase, and is_admin in the database
