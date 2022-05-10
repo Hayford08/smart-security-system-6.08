@@ -98,8 +98,48 @@ def get_user_info_from_session():
 
 The session is deleted when the user logs out of the website. In that case, the database clears the information associated with a particular user_id. This functionality was tested with different usernames and passwords and works as intended. Next thing to work on will be to have a separate page for changing the password.
 
+### Authentication and Server APIs
+
+All the server APIs that are used by the ESP are handled in `server_src/authentication.py` file. Below is the specification for all these API requests:
+
+```python
+#?checkAccess&username=<username>&door_id=<door_id> => returns True if the user has access to the door, False otherwise
+
+#?checkAccess&card_id=<card_id>&door_id=<door_id> => returns True if the user with the given card_id has access to the door, False otherwise
+
+#?getUsername&card_id=<card_id> => returns the username of the user
+
+#?getAuthenticationMethods&username=<username> => returns the list of authentication methods the user is using as: "password=<True/False>\npincode=<True/False>\nvoice=<True/False>"
+
+#?authenticate&username=<username>&password=<password> => returns true if the password matches the username
+
+#?authenticate&username=<username>&pincode=<pincode> => returns true if the pincode matches the username
+
+#?authenticate&username=<username>&voice_phrase=<voice_phrase> => returns true if the voice phrase matches the username
+ 
+# => returns "Unsupported Request" otherwise
+```
+The main code that handles these requests can be found in `request_handler()` function of the file. This function makes use of other helper functions that help respond to the API queries:
+
+```python
+def authenticate_login(username, password): # Given username and password, checks whether the credentials match
+
+def authenticate_pincode(username, pincode): # Given username and pincode, checks whether the credentials match
+
+def authenticate_voice_phrase(username, voice_phrase): # Given username and voice phrase, checks whether the credentials match
+
+def get_credentials(username): # Retrieves all credentials of the user (including password, pincode, etc.)
+
+def retrieve_username(card_id): # Given a card id, returns the username of the user with that card id. Returns None if the card id is not recognized.
+
+def get_authentication_methods(username): # Given a username, returns the list of enabled authentication method of that user in the following format:
+# "password=<True/False>\npincode=<True/False>\nv..."
+
+def checkAccess(username, door_id): # Given a door id and a username, checks whether the given user has access to the given door
+```
+
 ### Changing Profile Info
-Users can log in to the website and change their credentials (password, pincode, etc.).
+Users can log in to the website and change their credentials (password, pincode, voice phrase etc.).
 This is done in `profile.py` as follows:
 ```python
 new_password = request['form']['new_password']
@@ -116,8 +156,39 @@ def update_credentials(username, password, data):
             data["pincode"] = object[2]
         c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
         c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
+        ... # for other authentication methods
     return "Password Updated Successfully"
 ```
+
+### Text Input
+
+This ESP-side class is designated to allow to enter text inputs easier on the board. The idea behind this mechanism is that the user would enter their password/pincode letter by letter and submit the result when done entering by pressing a button. (given to the class contructor).
+
+Choosing each letter is achieved by utilizing the IMU sensor on the board such that the user can scroll through the letters in order based on the acceleration of the board in the X axis. The user can then enter the shown character by pressing a button and then move onto the next character.
+
+```cpp
+void update(int x) // Given acceleration x in the X axis, updates the current character. It should repeatedly be called when the user is entering a value.
+
+bool isValid() // Returns true if and only if the user has submitted their response and false otherwise. The user can restart the class by clicking the button.
+
+char *getText() // Returns the submitted response of the user. Only access this if isValid() == true.
+
+char *getCurrentText() // Returns the current response of the user (which is being edited). Used to display the current text that is being typed.
+
+```
+
+### SpeechToText
+This ESP-side class is designed to record and recognize passphrases from the user. The API for this class is very straightforward:
+
+```cpp
+void setup() // Should be called during the setup time of the ESP. Correctly initializes timer and secure wifi client.
+
+char* run() // Returns a pointer to the string that the user recorded.
+```
+
+When `run()` is called, this blocking function starts recording what the user says for 5 seconds (in `record_audio()`). It then sends a request to Google speech recognition API and receives a response (these are all done under the hood in `speech_to_text()`). The resulting recognized phrase is then copied into a string and the pointer to the string is then returned.
+
+The reason behind why this method is implemented as a blocking method is that during the 5 seconds that ESP starts recording the voice phrase, the ESP should not be doing anything else and it should only process the data from the microphone. Hence, the design choice for this function was chosen as blocking.
 
 ### MultiplePasswords
 
