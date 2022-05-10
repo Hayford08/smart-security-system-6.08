@@ -19,10 +19,10 @@ const uint8_t DOWN = 2;
 const uint8_t LEFT = 3;
 const uint8_t RIGHT = 4;
 
-char left_response[50]="";
-char right_response[50]="";
-char up_response[50]="";
-char down_response[50]="";
+char left_response[22]="";
+char right_response[22]="";
+char up_response[22]="";
+char down_response[22]="";
 
 char left_request[50]="";
 char right_request[50]="";
@@ -37,20 +37,20 @@ uint32_t step_timer = 0;
 const int RESPONSE_TIMEOUT = 6000; //ms to wait for response from host
 const int QUERY_PERIOD = 1000; //ms to wait between posting step
 
-const uint16_t IN_BUFFER_SIZE = 5000; //size of buffer to hold HTTP request
-const uint16_t OUT_BUFFER_SIZE = 2000; //size of buffer to hold HTTP response
+const uint16_t IN_BUFFER_SIZE = 3500; //size of buffer to hold HTTP request
+const uint16_t OUT_BUFFER_SIZE = 100; //size of buffer to hold HTTP response
 char post_request_buffer[IN_BUFFER_SIZE]; //char array buffer to hold HTTP request
 char post_response_buffer[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP response
 
-float measurements[5000];
-char str_measurements[6000] = "";
+// float measurements[5000];
+// char str_measurements[6000] = "";
 int iter = 0;
 bool measure;
-char json_body[5000] = "";
-float left_sequence[2000];
-float right_sequence[2000];
-float up_sequence[2000];
-float down_sequence[2000];
+char json_body[3000] = "";
+float left_sequence[500];
+float right_sequence[500];
+float up_sequence[500];
+float down_sequence[501];
 
 enum button_state {S0,S1,S2,S3,S4};
  
@@ -118,7 +118,7 @@ class Button{
 };
 
 
-char gesture_sequence[1000] = "";
+char gesture_sequence[100] = "";
 
 const uint8_t BUTTON1 = 45; // pin connected to button
 const uint8_t BUTTON2 = 39; // pin connected to button
@@ -342,7 +342,7 @@ void averaging_filter(float input, float* stored_values, int array_size) {
     }
     stored_values[0]=input;
 }
-char dir_measurements[5000] = "";
+char dir_measurements[3000] = "";
 void check_gesture(int array_size, float* dir_sequence, char* direction, char* response){
     memset(dir_measurements, 0, sizeof(dir_measurements));
     for (int i = 0; i<array_size; ++i){
