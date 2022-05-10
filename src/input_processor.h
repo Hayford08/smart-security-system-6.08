@@ -20,7 +20,7 @@ public:
     button = Button(BUTTON);
     CHARACTERS = CHARS;
     if (CHARACTERS != nullptr)
-      CHAR_COUNT = strlen(CHARACTERS);
+      COUNT = strlen(CHARACTERS);
     memset(text, 0, sizeof(text));
     memset(current, 0, sizeof(current));
   }

@@ -44,8 +44,8 @@ uint32_t step_timer = 0;
 float x, y, z; // variables for grabbing x,y,and z values
 const char USER[] = "random";
 
-char ALPHANUMERICS[62] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-char NUMERICS[10] = "0123456789";
+char ALPHANUMERICS[70];
+char NUMERICS[20];
 
 // Some constants and some resources:
 // const int RESPONSE_TIMEOUT = 6000;     // ms to wait for response from host
@@ -176,6 +176,9 @@ void setup()
     Serial.println(WiFi.status());
     ESP.restart(); // restart the ESP (proper way)
   }
+
+  sprintf(ALPHANUMERICS, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+  sprintf(NUMERICS, "0123456789");
 
   scanner.setup();
   door.setup();
