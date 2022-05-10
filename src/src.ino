@@ -194,7 +194,7 @@ void setup()
 
   //textInput = TextInputProcessor(BUTTON1);
   //pinInput = PinInputProcessor(BUTTON1);
-  sprintf(output, "LOCKED");
+  sprintf(output, "");
   textInput = InputProcessor(BUTTON1, ALPHANUMERICS);
   pinInput = InputProcessor(BUTTON1, NUMERICS);
   pinMode(LCD_CONTROL, OUTPUT);
@@ -433,6 +433,7 @@ void security_system_fsm() {
       state = LOCKED;
       door.close_door();
       transition_timer = millis();
+      strcpy(username, "");
     }
     }
     break;

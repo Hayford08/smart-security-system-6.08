@@ -62,6 +62,7 @@ public:
     {
         toClose = false;
         accessAuthorized = false;
+        strcpy(newcard, "");
     }
 
 private:
