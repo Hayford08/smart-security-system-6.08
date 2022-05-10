@@ -2,12 +2,13 @@
 #define TEXT_INPUT_H
 
 // char CHARACTERS[26] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";//"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+char CHARACTERS[37] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 class TextInputProcessor
 {
 private:
   char current[100], text[100];
   bool valid = false;
-  int CHAR_COUNT = 26; // 62;
+  int CHAR_COUNT = 36; // 62;
   int NUM_COUNT = 10;  // 62;
   int counter = 0, ptr = 0;
   float ANG_THRESHOLD = 1.0; // TODO CHANGE THIS
@@ -25,7 +26,8 @@ public:
 
   char getChar(int id)
   {
-    return (char)('A' + id);
+    return CHARACTERS[id];
+    //return (char)('A' + id);
   }
   char getNum(int id)
   {

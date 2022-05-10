@@ -11,7 +11,7 @@
 
 class Gestures {
 private:
-    MPU6050 imu; //imu object called, appropriately, imu
+    MPU6050* imu; //imu object called, appropriately, imu
     float old_acc_mag;  //previous acc mag
     float older_acc_mag;  //previous prevoius acc mag
     uint8_t gesture_state = 0;
@@ -21,10 +21,10 @@ private:
     const uint8_t LEFT = 3;
     const uint8_t RIGHT = 4;
 
-    char left_response[50]="";
-    char right_response[50]="";
-    char up_response[50]="";
-    char down_response[50]="";
+    char left_response[22]="";
+    char right_response[22]="";
+    char up_response[22]="";
+    char down_response[22]="";
 
     char left_request[50]="";
     char right_request[50]="";
@@ -39,22 +39,22 @@ private:
     const int RESPONSE_TIMEOUT = 6000; //ms to wait for response from host
     const int QUERY_PERIOD = 1000; //ms to wait between posting step
 
-    static const uint16_t IN_BUFFER_SIZE = 10000; //size of buffer to hold HTTP request
-    static const uint16_t OUT_BUFFER_SIZE = 10000; //size of buffer to hold HTTP response
+    static const uint16_t IN_BUFFER_SIZE = 3500; //size of buffer to hold HTTP request
+    static const uint16_t OUT_BUFFER_SIZE = 100; //size of buffer to hold HTTP response
     char post_request_buffer[IN_BUFFER_SIZE]; //char array buffer to hold HTTP request
     char post_response_buffer[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP response
 
-    float measurements[5000];
-    char str_measurements[6000] = "";
+    //float measurements[5000];
+    //char str_measurements[6000] = "";
     int iter = 0;
     bool measure;
-    char json_body[6000] = "";
-    float left_sequence[2000];
-    float right_sequence[2000];
-    float up_sequence[2000];
-    float down_sequence[2000];
+    char json_body[3000] = "";
+    float left_sequence[500];
+    float right_sequence[500];
+    float up_sequence[500];
+    float down_sequence[501];
 
-    char gesture_sequence[1000] = "";
+    char gesture_sequence[100] = "";
 
     const uint8_t BUTTON1 = 45; // pin connected to button
     const uint8_t BUTTON2 = 39; // pin connected to button
@@ -62,26 +62,25 @@ private:
     Button button1 = Button(BUTTON1), button2 = Button(BUTTON2);
 
 public:
-    void setup() {
-        // put your setup code here, to run once:
-        if (imu.setupIMU(1)) {
-            Serial.println("IMU Connected!");
-        } else {
-            Serial.println("IMU Not Connected :/");
-            Serial.println("Restarting");
-            ESP.restart(); // restart the ESP (proper way)
-        }
+    void setup(MPU6050* imu) {
+        this->imu = imu;
         measure = false;
     }
 
-    void loop() {
+    void reset() {
+      measure = false;
+      memset(gesture_sequence, 0, sizeof(gesture_sequence));
+      memset(json_body, 0, sizeof(json_body));  
+    }
+
+    void record(char* gestures) {
         // put your main code here, to run repeatedly:
         
-        imu.readAccelData(imu.accelCount);  
+        imu->readAccelData(imu->accelCount);  
         float x, y, z;
-        x = imu.accelCount[0] * imu.aRes;
-        y = imu.accelCount[1] * imu.aRes;
-        z = imu.accelCount[2] * imu.aRes;
+        x = imu->accelCount[0] * imu->aRes;
+        y = imu->accelCount[1] * imu->aRes;
+        z = imu->accelCount[2] * imu->aRes;
         float acc_mag = sqrt(x * x + y * y + z * z);
         float avg_acc_mag = 1.0 / 3.0 * (acc_mag + old_acc_mag + older_acc_mag);
         older_acc_mag = old_acc_mag;
@@ -173,28 +172,11 @@ public:
                 strcat(gesture_sequence, ",");
             }
             Serial.println(gesture_sequence);
+            
         }  
+
+        strcpy(gestures, gesture_sequence);
     
-    
-        if(input2 ==1){
-            Serial.println("here?");
-            sprintf(json_body, "authenticate_gesture=true&username=dkriezis&gesture_sequence=");    
-            strcat(json_body, gesture_sequence);
-            int body_len = strlen(json_body);
-            Serial.println(json_body);
-            post_request_buffer[0] = '\0';
-            post_response_buffer[0] = '\0';
-            sprintf(post_request_buffer, "POST http://608dev-2.net/sandbox/sc/team26/server_src/authentication.py HTTP/1.1\r\n");
-            strcat(post_request_buffer, "Host: 608dev-2.net\r\n");
-            strcat(post_request_buffer, "Content-Type: application/x-www-form-urlencoded\r\n");
-            char content_leng[50]="";
-            sprintf(content_leng, "Content-Length: %d\r\n\r\n", body_len);
-            strcat(post_request_buffer, content_leng);
-            strcat(post_request_buffer, json_body);
-            do_http_request("608dev-2.net", post_request_buffer, post_response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);      
-            memset(gesture_sequence, 0, sizeof(gesture_sequence));
-            memset(json_body, 0, sizeof(json_body));
-        }
         // CHECKING correlation ends here
         char output[100];
         // sprintf(output, "X:%4.2f,Y:%4.2f, STEPS:%d", acc_mag, avg_acc_mag, count); //render numbers with %4.2 float formatting
@@ -220,7 +202,7 @@ public:
         stored_values[0]=input;
     }
 
-    char dir_measurements[10000] = "";
+    char dir_measurements[3000] = "";
 
     void check_gesture(int array_size, float* dir_sequence, char* direction, char* response){
         memset(dir_measurements, 0, sizeof(dir_measurements));
