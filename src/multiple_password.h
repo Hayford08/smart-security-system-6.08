@@ -29,50 +29,58 @@ class MultiplePassword
 private:
     const int RESPONSE_TIMEOUT = 6000;            // ms to wait for response from host
     const int POSTING_PERIOD = 6000;              // periodicity of getting a number fact.
-    static const uint16_t IN_BUFFER_SIZE = 1000;  // size of buffer to hold HTTP request
-    static const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
-    char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
-    char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
-    char body[200];                               // for body
+//    static const uint16_t IN_BUFFER_SIZE = 1000;  // size of buffer to hold HTTP request
+//    static const uint16_t OUT_BUFFER_SIZE = 1000; // size of buffer to hold HTTP response
+
     // authentification_method auth = GETUSERNAME;   // default
-    char username[6000]="";
+    //char username[200]="";
     // bool is_auth_valid = false;
     bool password_authenticated = false;
     bool pincode_authenticated = false;
     bool phrase_authenticated = false;
     bool card_authenticated = false;
+    bool gesture_authenticated = false;
+
+public:
     bool is_password_needed = false;
     bool is_pincode_needed = false;
     bool is_phrase_needed = false;
-
-public:
+    bool is_gesture_needed = false;
+    
     void setup() {
         password_authenticated = false;
         pincode_authenticated = false;
         phrase_authenticated = false;
         card_authenticated = false;
+        gesture_authenticated = false;
         is_password_needed = false;
         is_pincode_needed = false;
         is_phrase_needed = false;
+        is_gesture_needed = false;
     }
+    
 
     /**
      * Sends a GET request with the card id and replaces the username field with the associated username
      */
     void get_username(char *card_id, char* obtained_username) {
-        sprintf(body, "?getUsername&card_id=%s", card_id);
-        request_buffer[0] = '\0';
-        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
+        char request_buffer[IN_BUFFER_SIZE] = "";          // char array buffer to hold HTTP request
+        char response_buffer[OUT_BUFFER_SIZE] = "";        // char array buffer to hold HTTP response
+        //char body[200];                               // for body
+
+        //body[0] = '\0';
+        
+        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py?getUsername&card_id=%s HTTP/1.1\r\n", card_id);
         strcat(request_buffer, "Host: 608dev-2.net\r\n\r\n");
         // Serial.println(request_buffer);
-        response_buffer[0] = '\0';
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-        username[0] = '\0';
+        response_buffer[strlen(response_buffer)-1]='\0';
+        // username[0] = '\0';
         obtained_username[0] = '\0';
-        sprintf(username, response_buffer);
-        sprintf(obtained_username, response_buffer);
-        Serial.printf("GOT USERNAME %s\n", username);
-        //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
+        // sprintf(username, response_buffer);
+        strcpy(obtained_username, response_buffer);
+        // Serial.printf("GOT USERNAME %s\n", username);
+        // sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
     }
 
     /**
@@ -80,22 +88,19 @@ public:
      * and updates is_pincode_needed and is_password_needed
      */
     void get_auth_methods(char *username) {
-        sprintf(body, "?getAuthenticationMethods&username=%s", username);
-        request_buffer[0] = '\0';
-        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
+        char request_buffer[IN_BUFFER_SIZE] = "";          // char array buffer to hold HTTP request
+        char response_buffer[OUT_BUFFER_SIZE] = "";        // char array buffer to hold HTTP response
+        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py?getAuthenticationMethods&username=%s HTTP/1.1\r\n", username);
         strcat(request_buffer, "Host: 608dev-2.net\r\n\r\n");
         // Serial.println(request_buffer);
-        memset(response_buffer, 0, OUT_BUFFER_SIZE);
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-        Serial.printf("%s\n", response_buffer);
-        Serial.printf("%s\n", response_buffer);
-        Serial.printf("ok cool");
+        response_buffer[strlen(response_buffer)-1]='\0';
         parse_auth_methods(response_buffer);
-        Serial.printf("gotcha");
-        Serial.printf("Pincode %sneeded, password %sneeded\n, voice %sneeded", is_pincode_needed?"": "not ", is_password_needed?"": "not ", is_phrase_needed?"": "not ");
+        Serial.printf("Pincode %sneeded, password %sneeded, voice %sneeded, gesture %sneeded", is_pincode_needed?"": "not ", is_password_needed?"": "not ", is_phrase_needed?"": "not ", is_gesture_needed?"": "not ");
         password_authenticated = !is_password_needed;
         pincode_authenticated = !is_pincode_needed;
         phrase_authenticated = !is_phrase_needed;
+        gesture_authenticated = !is_gesture_needed;
         //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
     }
 
@@ -103,6 +108,10 @@ public:
      * Check if the user with this card has access to the door
      */ 
     bool check_access_by_card(char *card_id, int door_id = 1) {
+          char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
+    char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
+        char body[200];                               // for body
+        body[0] = '\0';
         sprintf(body, "?checkAccess&type=card_id&card_id=%s&door_id=%d", card_id, door_id);
         request_buffer[0] = '\0';
         sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
@@ -110,7 +119,7 @@ public:
         // Serial.println(request_buffer);
         response_buffer[0] = '\0';
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-        parse_auth_methods(response_buffer);
+        response_buffer[strlen(response_buffer)-1]='\0';
         //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
         // if(response_buffer[0] == 'T' && response_buffer[1] == 'r' && response_buffer[2] == 'u' && response_buffer[3] == 'e')
         card_authenticated = strcmp(response_buffer, "True") == 0;
@@ -121,6 +130,10 @@ public:
      * Check if the user with this username has access to the door
      */ 
     bool check_access_by_username(char *username, int door_id = 1) {
+          char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
+    char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
+        char body[200];                               // for body
+
         sprintf(body, "?checkAccess&type=username&username=%s&door_id=%d", username, door_id);
         request_buffer[0] = '\0';
         sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
@@ -128,7 +141,7 @@ public:
         // Serial.println(request_buffer);
         response_buffer[0] = '\0';
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-        parse_auth_methods(response_buffer);
+        response_buffer[strlen(response_buffer)-1]='\0';
         //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
         // if(response_buffer[0] == 'T' && response_buffer[1] == 'r' && response_buffer[2] == 'u' && response_buffer[3] == 'e')
         card_authenticated = strcmp(response_buffer, "True") == 0;
@@ -139,6 +152,10 @@ public:
      * Check if the given pincode is correct
      */ 
     bool authenticate_by_pincode(char *username, char* pincode) {
+          char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
+    char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
+        char body[200];                               // for body
+
         sprintf(body, "?authenticate&type=pincode&username=%s&pincode=%s", username, pincode);
         request_buffer[0] = '\0';
         sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
@@ -146,7 +163,7 @@ public:
         // Serial.println(request_buffer);
         response_buffer[0] = '\0';
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-        parse_auth_methods(response_buffer);
+        response_buffer[strlen(response_buffer)-1]='\0';
         //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
         // if(response_buffer[0] == 'T' && response_buffer[1] == 'r' && response_buffer[2] == 'u' && response_buffer[3] == 'e')
         if(strcmp(response_buffer, "True") == 0)
@@ -158,6 +175,10 @@ public:
      * Check if the given password is correct
      */ 
     bool authenticate_by_password(char *username, char* password) {
+          char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
+    char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
+        char body[200];                               // for body
+
         sprintf(body, "?authenticate&type=password&username=%s&password=%s", username, password);
         request_buffer[0] = '\0';
         sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
@@ -165,7 +186,7 @@ public:
         // Serial.println(request_buffer);
         response_buffer[0] = '\0';
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-        parse_auth_methods(response_buffer);
+        response_buffer[strlen(response_buffer)-1]='\0';
         //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
         // if(response_buffer[0] == 'T' && response_buffer[1] == 'r' && response_buffer[2] == 'u' && response_buffer[3] == 'e')
         if(strcmp(response_buffer, "True") == 0)
@@ -177,19 +198,46 @@ public:
      * Check if the phrase is correct
      */ 
     bool authenticate_by_phrase(char *username, char* phrase) {
-        sprintf(body, "?authenticate&type=phrase&username=%s&phrase=%s", username, phrase);
+          char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
+    char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
+        char body[200];                               // for body
+
+        sprintf(body, "?authenticate&type=voice_phrase&username=%s&voice_phrase=%s", username, phrase);
         request_buffer[0] = '\0';
         sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
         strcat(request_buffer, "Host: 608dev-2.net\r\n\r\n");
         // Serial.println(request_buffer);
         response_buffer[0] = '\0';
         do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
-        parse_auth_methods(response_buffer);
+        response_buffer[strlen(response_buffer)-1]='\0';
         //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
         // if(response_buffer[0] == 'T' && response_buffer[1] == 'r' && response_buffer[2] == 'u' && response_buffer[3] == 'e')
         if(strcmp(response_buffer, "True") == 0)
             phrase_authenticated = true; // somehow
         return phrase_authenticated;
+    }
+
+    /**
+     * Check if the gesture sequence is correct
+     */ 
+    bool authenticate_by_gesture(char *username, char* gesture) {
+          char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
+    char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
+        char body[200];                               // for body
+
+        sprintf(body, "?authenticate&type=gesture&username=%s&gesture=%s", username, gesture);
+        request_buffer[0] = '\0';
+        sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
+        strcat(request_buffer, "Host: 608dev-2.net\r\n\r\n");
+        // Serial.println(request_buffer);
+        response_buffer[0] = '\0';
+        do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+        response_buffer[strlen(response_buffer)-1]='\0';
+        //sprintf(username, response_buffer); // response should be smth like username if this card_id exists + if a person can access the door
+        // if(response_buffer[0] == 'T' && response_buffer[1] == 'r' && response_buffer[2] == 'u' && response_buffer[3] == 'e')
+        if(strcmp(response_buffer, "True") == 0)
+            gesture_authenticated = true; // somehow
+        return gesture_authenticated;
     }
 
     /**
@@ -202,15 +250,19 @@ public:
     void parse_auth_methods(char *auth_methods) {
         // password=True\npincode=True\nvoice=True\n
         Serial.printf("auth_methods:%s\n", auth_methods);
-        char * token = strtok(auth_methods, "password=");
-        Serial.printf("token:%s\n", token);
+        char * token = strtok(auth_methods, "=");
         // loop through the string to extract all other tokens
-        char* password = strtok(NULL, "\npincode=");
+        char* password = strtok(NULL, "&");
         Serial.printf("password:%s\n", password);
-        char* pincode = strtok(NULL, "\nvoice=");
+        token = strtok(NULL, "=");
+        char* pincode = strtok(NULL, "&");
         Serial.printf("pincode:%s\n", pincode);
-        char* phrase = strtok(NULL, "\n");
+        token = strtok(NULL, "=");
+        char* phrase = strtok(NULL, "&");
         Serial.printf("phrase:%s\n", phrase);
+        token = strtok(NULL, "=");
+        char* gesture = strtok(NULL, "\0");
+        Serial.printf("gesture:%s\n", gesture);
 
         if (strcmp(password, "True") == 0) {
             is_password_needed = true;
@@ -226,6 +278,12 @@ public:
             is_phrase_needed = true;
         } else {
             is_phrase_needed = false;
+        }
+
+        if (strcmp(gesture, "True") == 0) {
+          is_gesture_needed = true;  
+        } else {
+          is_gesture_needed = false;  
         }
     }
 };

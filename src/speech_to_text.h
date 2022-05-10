@@ -1,3 +1,6 @@
+#ifndef SPEECH_TO_TEXT_H
+#define SPEECH_TO_TEXT_H
+
 //#include <SPI.h>
 //#include <TFT_eSPI.h>
 #include <WiFiClientSecure.h>
@@ -67,12 +70,12 @@ public:
         client.setCACert(CA_CERT); //set cert for https
     }
     //main body of code
-    char* run() {
+    void run(char* output) {
         speech_to_text();
         Serial.printf("RS %s::\n", response);
         char res[100];
         memcpy(res, response, sizeof(res));
-        return res;
+        strcpy(output, res);
     }
 
 private:
@@ -360,3 +363,5 @@ private:
     return true;
     }
 };
+
+#endif // SPEECH_TO_TEXT_H

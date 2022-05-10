@@ -1,6 +1,8 @@
 #ifndef PIN_INPUT_H
 #define PIN_INPUT_H
 
+#include <Arduino.h>
+
 class PinInputProcessor
 {
 private:
@@ -43,6 +45,7 @@ public:
     current[ptr] = getNum(counter);
 
     int input = button.update();
+    Serial.printf("Button: %d\n", input);
     if (valid && input)
     {
       valid = false;
