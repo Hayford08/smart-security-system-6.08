@@ -15,7 +15,7 @@
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
-char network[] = "MIT";
+char network[] = "EECS-Lounges";
 char password[] = "";
 /* Having network issues since there are 50 MIT and MIT_GUEST networks?. Do the following:
     When the access points are printed out at the start, find a particularly strong one that you're targeting.
@@ -53,7 +53,7 @@ const char USER[] = "random";
 
 const uint8_t BUTTON1 = 45; // pin connected to button
 const uint8_t BUTTON2 = 39; // pin connected to button
-MPU6050 imu;                // imu object called, appropriately, imu
+MPU6050* imu = new MPU6050;                // imu object called, appropriately, imu
 
 Button button1(BUTTON1), button2(BUTTON2);
 TextInputProcessor textInput;
@@ -106,7 +106,7 @@ void setup()
   delay(100);                              // wait a bit (100 ms)
   Wire.begin();
   delay(50); // pause to make sure comms get set up
-  if (imu.setupIMU(1))
+  if (imu->setupIMU(1))
   {
     Serial.println("IMU Connected!");
   }
@@ -175,7 +175,7 @@ void setup()
   door.setup();
   speechToText.setup();
   multipass.setup();
-  gestures.setup();
+  gestures.setup(imu);
 
   textInput = TextInputProcessor(BUTTON1);
   pinInput = PinInputProcessor(BUTTON1);
@@ -206,7 +206,7 @@ void security_system_fsm() {
     //delay(3000);
     scanner.loop();
     //sprintf(scanner.newcard, "73 25 A1 31"); // comment this line out  
-    //scanner.newcard = "73 25 A1 31"; // hard coding for now
+    // scanner.newcard = "73 25 A1 31"; // hard coding for now
     if (scanner.newcard[0] != '\0') {
 //      Serial.printf("Id tapped: %s\n", scanner.newcard);
 //      multipass.get_username(scanner.newcard, username);
@@ -239,8 +239,10 @@ void security_system_fsm() {
     }
     break;
   case PIN:{ // Enter text with imu
+    // state = GESTURE;
+    // break;
     if (! multipass.is_pincode_needed) {
-      state = SPEECH;
+      state = TEXT;
       break;
     }
     // Read imu data
@@ -248,11 +250,11 @@ void security_system_fsm() {
     //output[0] = '\0';
     //sprintf(output, "Enter your PIN"); 
     //delay(1000); 
-    imu.readAccelData(data); // readGyroData(data);
+    imu->readAccelData(data); // readGyroData(data);
     float x, y, z;
-    x = ZOOM * data[0] * imu.aRes;
-    y = ZOOM * data[1] * imu.aRes;
-    z = ZOOM * data[2] * imu.aRes;
+    x = ZOOM * data[0] * imu->aRes;
+    y = ZOOM * data[1] * imu->aRes;
+    z = ZOOM * data[2] * imu->aRes;
 
     // Update textInput
     Serial.println(x);
@@ -279,56 +281,56 @@ void security_system_fsm() {
     if (strcmp(prev_output, output) != 0) {
     bool result = multipass.authenticate_by_pincode(username, pinInput.getCurrentText());
     if (result) {
-      state = SPEECH;
+      state = TEXT;
     }
     }
     }
     break;
 
-//  case TEXT: { // Enter text with imu
-//    if (! multipass.is_password_needed) {
-//      state = SPEECH;
-//      break;
-//    }
-//    // Read imu data
-//    int16_t data[3];
-//    imu.readAccelData(data); // readGyroData(data);
-//    x = ZOOM * data[0] * imu.aRes;
-//    y = ZOOM * data[1] * imu.aRes;
-//    z = ZOOM * data[2] * imu.aRes;
-//
-//    // Update textInput
-//    Serial.println(x);
-//    textInput.update(x);
-//    char prev_output[100];
-//    strcpy(prev_output, output);
-//    if (textInput.isValid())
-//    {
-//      sprintf(output, "%s     ", textInput.getText());
-//    }
-//    else
-//    {
-//      sprintf(output, "%s     ", textInput.getCurrentText());
-//    }
-//
-//    Serial.println(textInput.isValid());
-//    Serial.println(textInput.getCurrentText());
-//
-//    // If the text is a hardcoded "enter", unlock the door
-//
-//    // char lower[100];
-//    // to_lower(textInput.getCurrentText(), lower);
-//    if (strcmp(prev_output, output) != 0) {
-//    char lower[100];
-//    to_lower(textInput.getCurrentText(), lower);
-//    bool result = multipass.authenticate_by_password(username, lower);
-//    if (result) {
-//      state = SPEECH;
-//      door.open_door();
-//    }
-//    }
-//    }
-//    break;
+  case TEXT: { // Enter text with imu
+    if (! multipass.is_password_needed) {
+      state = SPEECH;
+      break;
+    }
+    // Read imu data
+    int16_t data[3];
+    imu->readAccelData(data); // readGyroData(data);
+    x = ZOOM * data[0] * imu->aRes;
+    y = ZOOM * data[1] * imu->aRes;
+    z = ZOOM * data[2] * imu->aRes;
+
+    // Update textInput
+    Serial.println(x);
+    textInput.update(x);
+    char prev_output[100];
+    strcpy(prev_output, output);
+    if (textInput.isValid())
+    {
+      sprintf(output, "%s     ", textInput.getText());
+    }
+    else
+    {
+      sprintf(output, "%s     ", textInput.getCurrentText());
+    }
+
+    Serial.println(textInput.isValid());
+    Serial.println(textInput.getCurrentText());
+
+    // If the text is a hardcoded "enter", unlock the door
+
+    // char lower[100];
+    // to_lower(textInput.getCurrentText(), lower);
+    if (strcmp(prev_output, output) != 0) {
+    char lower[100];
+    to_lower(textInput.getCurrentText(), lower);
+    bool result = multipass.authenticate_by_password(username, lower);
+    if (result) {
+      state = SPEECH;
+      //door.open_door();
+    }
+    }
+    }
+    break;
   case SPEECH: {
     if (! multipass.is_phrase_needed) {
       state = GESTURE;
@@ -353,9 +355,21 @@ void security_system_fsm() {
 
   case GESTURE:
     if (! multipass.is_gesture_needed) {
-      state = UNLOCKED;  
+      state = UNLOCKED;
+      door.open_door();  
     }
-    gestures.loop();
+    //state = UNLOCKED;  
+    char result_gestures[100];
+    gestures.record(result_gestures);
+
+    if (button2.update()) {
+      bool result = multipass.authenticate_by_gesture(username, result_gestures);
+      if (result) {
+        state = UNLOCKED;
+        door.open_door();
+      }
+      gestures.reset();
+    }
 
     break;
 
