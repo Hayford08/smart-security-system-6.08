@@ -27,11 +27,7 @@ public:
 
   char getChar(int id)
   {
-    return (char)('A' + id);
-  }
-  char getNum(int id)
-  {
-    return (char)('0' + id);
+    return CHARACTERS[id];
   }
 
   void update(int x)
