@@ -48,7 +48,7 @@ def get_authentication_methods(username):
         return 'password=' + str(object[1] != '') + '\npincode=' + str(object[2] != '') + '\nvoice=' + str(object[3] != '') + '\n'
 
 def checkAccess(username, door_id):
-    with sqlite3.connect(database) as c:
+    with sqlite3.connect(door_access_db) as c:
         c.execute("""SELECT * FROM door_user_table WHERE username = ? AND door_id = ?""", (username, door_id)).fetchone() != None
         
 
