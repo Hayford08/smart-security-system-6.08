@@ -44,8 +44,8 @@ uint32_t step_timer = 0;
 float x, y, z; // variables for grabbing x,y,and z values
 const char USER[] = "random";
 
-char ALPHANUMERICS[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-char NUMERICS[] = "0123456789";
+char ALPHANUMERICS[62] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+char NUMERICS[10] = "0123456789";
 
 // Some constants and some resources:
 // const int RESPONSE_TIMEOUT = 6000;     // ms to wait for response from host

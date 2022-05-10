@@ -6,8 +6,7 @@ class InputProcessor
 private:
   char current[30], text[30];
   bool valid = false;
-  int CHAR_COUNT = 26; // 62;
-  int NUM_COUNT = 10;  // 62;
+  int COUNT = 62;
   int counter = 0, ptr = 0;
   float ANG_THRESHOLD = 1.0; // TODO CHANGE THIS
   int last_update = 0;
@@ -46,7 +45,7 @@ public:
           counter++;
         if (x < 0)
           counter--;
-        counter = (counter + CHAR_COUNT) % CHAR_COUNT;
+        counter = (counter + COUNT) % COUNT;
       }
     }
     current[ptr] = getChar(counter);
