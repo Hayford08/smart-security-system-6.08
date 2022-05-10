@@ -5,8 +5,9 @@
 #include <mpu6050_esp32.h>
 #include <math.h>
 #include "button.h"
-#include "text_input.h"
-#include "pin_input.h"
+//#include "text_input.h"
+//#include "pin_input.h"
+#include "input_processor.h"
 #include "card_scanner.h"
 #include "door.h"
 #include "multiple_password.h"
@@ -43,6 +44,9 @@ uint32_t step_timer = 0;
 float x, y, z; // variables for grabbing x,y,and z values
 const char USER[] = "random";
 
+char ALPHANUMERICS[70];
+char NUMERICS[20];
+
 // Some constants and some resources:
 // const int RESPONSE_TIMEOUT = 6000;     // ms to wait for response from host
 // const int POSTING_PERIOD = 6000;       // periodicity of getting a number fact.
@@ -59,8 +63,10 @@ const uint8_t BUTTON2 = 39; // pin connected to button
 MPU6050* imu = new MPU6050;                // imu object called, appropriately, imu
 
 Button button1(BUTTON1), button2(BUTTON2);
-TextInputProcessor textInput;
-PinInputProcessor pinInput;
+//TextInputProcessor textInput;
+//PinInputProcessor pinInput;
+InputProcessor textInput;
+InputProcessor pinInput;
 CardScanner scanner;
 Door door;
 MultiplePassword multipass;
@@ -177,16 +183,20 @@ void setup()
     ESP.restart(); // restart the ESP (proper way)
   }
 
+  sprintf(ALPHANUMERICS, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+  sprintf(NUMERICS, "0123456789");
+
   scanner.setup();
   door.setup();
   speechToText.setup();
   multipass.setup();
   gestures.setup(imu);
 
+  //textInput = TextInputProcessor(BUTTON1);
+  //pinInput = PinInputProcessor(BUTTON1);
   sprintf(output, "LOCKED");
-
-  textInput = TextInputProcessor(BUTTON1);
-  pinInput = PinInputProcessor(BUTTON1);
+  textInput = InputProcessor(BUTTON1, ALPHANUMERICS);
+  pinInput = InputProcessor(BUTTON1, NUMERICS);
   pinMode(LCD_CONTROL, OUTPUT);
 }
 
@@ -205,9 +215,10 @@ void security_system_fsm() {
     state = TAP;
     sprintf(stage, "locked");
     sprintf(output, "");
-    textInput = TextInputProcessor(BUTTON1);
-    pinInput = PinInputProcessor(BUTTON1);
-    transition_timer = millis();
+    //textInput = TextInputProcessor(BUTTON1);
+    //pinInput = PinInputProcessor(BUTTON1);
+    textInput = InputProcessor(BUTTON1, ALPHANUMERICS);
+    pinInput = InputProcessor(BUTTON1, NUMERICS);
     }
     break;
 
