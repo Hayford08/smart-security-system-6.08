@@ -39,7 +39,7 @@ def request_handler(request):
             </div>
             <h3> If you want to disable a method of authentication, leave it blank. </h3>
             <div>
-                <form method="post">
+                <form method="post" onsubmit="storeCredentials(localStorage.getItem('name'), document.getElementById('new_password').value">
                     <label for="Password">New Password: </label><br>
                     <input type="password" id="new_password" name="new_password"><br>
                     <label for="Pincode"> Pincode: </label><br>

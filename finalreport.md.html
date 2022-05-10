@@ -1,0 +1,429 @@
+<meta charset="utf-8" emacsmode="-*- markdown -*-">
+**SmartSecuritySystem - Final Report**
+
+Our Smart Security System aims at making your home more secure. You might have seen in the Incredibles movie 
+Edna Mode entering a sequence of passwords in order to enter into her high security costume testing room and show Elastigirl the costumes she had designed for her family. What our project 
+tries to achieve is something very similar. In order to get access to a door, you need to go through several security layers
+to verify that you are eligible for access. 
+
+
+
+
+Overview
+===============================================================================
+As mentioned briefly in the introduction, the goal of our project was to design a multi-layer security system for accessing doors.
+
+More specifically, our system has the following security layers: the user first taps their card or fobs on an RFID
+scanner. Upon tapping the card, the system will either accept or reject the card. If the card is rejected, then the user cannot enter the door.
+If, however, the card is accepted, then the user will be prompted to go through the next layer of security, which is entering a passcode. If the user enters 
+the correct passcode, they will move to the next security layer, which is speaking a passphrase to the microphone. Once they get authenticated, they will move to the final 
+security layer which is moving the esp in a certain pattern. Once they have gone through all of these security layers, they get access to the door, and the door opens.
+
+It is important to note that each passcode is chosen by the user themself by accessing our website, where they can change and see their passwords, as well as which doors they have access to.
+
+Additionally, our system supports an additional user, the Admin that has access to all the doors, and can assign and remove 
+access for the users from different doors.
+
+Documentation
+===============================================================================
+
+
+## TODO: State Machine Diagrams
+
+## TODO: Block Diagrams
+
+Server Side
+===============================================================================
+
+## Interfacer
+The interfacer.py is interactive page for the user on the website. This file is where GET and POST requests are accomplished. It's 
+also the file that calls all the authentication processing that needs to be checked before the username is granted access to the 
+webpage. 
+
+For first time login, a login form is returned to the user to fill. The user enters their username and password and click submit for 
+the credentials to be verified. To verify the credentials, authenticate_login is called with the username and password. If the result is
+returned to be True, then the user's webpage showing the doors they have access to, their credentials for logging into the security system
+on the ESP, and the option to their profile. However, if the result is False, the appropriate message is shown to the user. 
+
+Below is an image of what is shown on the webpage upon login: 
+
+<img src="Front_page_on_the_server.png"
+     alt="Front page on a user on the server"
+     style="float: left; margin-right: 10px;" />
+
+The interfacer gives an extra layout for an Admin. Upon logging as an Admin, this user can enter Admin mode and decide who has access
+to which door. 
+
+
+## Sessions
+
+We started by implementing sessions which allows the user to come back to the website already logged in with their credentials. This was
+being done by storing a universally unique identifier (UUID) from which the user accessed the webpage, username, and password. When a get request
+is made from the user, we check if that UUID has been seen before or not. If it has, we retrieve their session information from the database. 
+However, we run into a problem where multiple users could not be on the webpage as the concurrently. This is because the code (shown below) that was used to generate the UUID 
+for each user was providing the unique identifier for the server. 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_id():
+    """
+    This function returns the unique id for the computer the user uses
+    """
+    return hash(uuid.UUID(int=uuid.getnode()))
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A different approach was introduced to still allow the user to return to their session when they have not logged out. This was achieved by 
+using a localStorage. Each new login stores the user's username and password. Then for each new GET request, their localStorage is checked
+if there is a username and password already stored. If so, these information are used to retrieve the user information on the database and 
+will not be prompt to log in until they log out, where their localStorage is cleared. 
+
+
+## Authentication
+
+
+## Database Requests
+
+The database request file is the access point for all requests that need access to the 
+databases used in this project. It contains requests on the following databases:
+<ul>
+    <li>session_db -- used for storing the user_hash, username, and password</li>
+    <li>door_access_db -- used for storing the username and associated door_id</li>
+    <li>database -- used for storing username, password, pincode, voice_phrase, is_admin, card_id, and gesture</li>
+</ul>
+
+The prominent request that the database_request processes is getting the user's door accesses. The function, shown below, illustrates
+how given the username, the doors that the user has access to is retrieved and returned as string in an html format.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_user_door_access_input(username):
+    """
+    This function takes in a username and returns all the doors that the user has access to as
+    an html checkbox type
+    """
+    door_data = []
+    with sqlite3.connect(door_access_db) as c:
+        door_data = c.execute('''SELECT door_id FROM door_user_table WHERE username = ?;''', (username,)).fetchall()
+    
+    allowed_doors = set()
+    for door_id in door_data:
+        allowed_doors.add(door_id[0])
+    
+    door_list = f'''<form method = "post" action="admin.py"> <input name = 'username' type = "hidden" value ={username}>'''
+    for door_id in get_all_doors():
+        if door_id[0] in allowed_doors:
+            door_list += f'''<div><input type="checkbox" id={str(door_id[0])} name = {str(door_id[0])} checked> Door {str(door_id[0])} </label></div> '''
+        else:
+            door_list += f'''<div><input type="checkbox" id={str(door_id[0])} name = {str(door_id[0])}> Door {str(door_id[0])} </label></div> '''
+    door_list += f'''<input type="submit" value="Update {username}'s access">'''
+    door_list += '''</form>'''
+    return door_list
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Other functions that are called in used in the project include: 
+<ul>
+    <li>get_all_doors</li>
+    <li>remove_door_access</li>
+    <li>add_door_access</li>
+    <li>check_admin</li>
+</ul>
+
+These functions allows processing information back and forth between the server, ESP, and webpage more efficient and collision-free.
+
+## Data Driven Side of the project
+
+This project involved incorporating data to decide what works and what doesn't. For example, even though we logged in on our personal computers, we
+realized that the user_hash was the same, and this made us realized that storing user session on the server will not be the better approach of 
+getting sessions on the website. The image below shows the user_hash of Admin logged in multiple times on different laptops but having the same user_hash:
+
+<img src="User_hash_being_the_same_on_different_laptops.png"
+     alt="user hash having the same value"
+     style="margin-right: 10px; height: 60%;" />
+
+This led to using localStorage in storing sessions on the user's personal browser instead on our server. This led to a working access to 
+multiple users on the server. 
+
+Again, in order to decide which acceleration values correspond to different gesture movements, we stored the direction and sequences that made us 
+know which treshold value to use as right, left, up, or down. The database below show the sequences that we used in training our model to determine 
+directions
+
+<img src="Direction_sequences.png"
+     alt="Direction and sequences gotten during training"
+     style="margin-right: 10px; height: max-content;"/>
+
+With this training model in place, we were able to assign different gesture_password to the users we have on the server: 
+
+<img src="users_and_passwords.png"
+     alt="Users and their passwords"
+     style="margin-right: 10px;"/>
+
+
+We also used our database to store the door access given to each user on the user. This allowed to admin to modify and control who 
+has access to which door. This helped in controlling the security and safety of the authorized users on the server:
+
+<img src="users_and_door_access.png"
+     alt="Users and their door access"
+     style="margin-right: 10px; height: 50%;"/>
+
+
+## Admin
+
+The purpose of the admin page is to let the admin give and remove access of users from certain esps.
+
+To get to the admin page we use an html button of type submit, that when pressed sends us to another file called admin.py.
+
+### Displaying Board Access
+
+To display which esps each player has access to we do the following.
+
+First we get all usernames for the user table.
+
+The we select all the boards from the doors_user_table, which will contain all boards, since admin has access to all of them.
+
+Then for each username, we get all the doors that the username has access to from the doors_users_table and put them in a set called allowed_doors.
+
+Then for each door in the system, we check if it belongs in the allowed_doors set, if it does we display it in the html with a filled checkbox, and if it doesn't we display it with an unfilled checkbox.
+
+For each user, the checkboxes, corresponding to the each door belong to a single form, with a single submit button that when pressed, sends a post request with the information of this form.
+
+### changing Board access
+
+To change access, you check which doors you want to give access to and you un-check all doors you want to remove access from.
+
+Once you have done that for a single user, then you have to submit the user's button that will send a post request it the admin.py page, to a update the access accordingly.
+
+Once the admin.py page receives the post request, it first checks that the post request doesn't correspond to the post request for accessing admin.py from interfacer.py. Then, it gets the username of the user the changes were made for. Then, it removes access to all doors for this username by deleting in the table doors_users_table, all entries with username as username. Then it iterates over all keys in the post response, that are not a username, and gives access to username for this doors, by calling add_door_access which inserts into the door_users_table the door and the username, as shown in the code below.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+for elt in request["form"]:
+    if elt != "username":
+        action = request["form"][elt]          
+        if(action == "on"):
+            add_door_access(int(elt), username)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finally, we have a button that when clicked sends us back to the interfacer.py page.
+
+
+## Profile
+
+Users can log in to the website and change their credentials: password, pincode, etc..
+This is done in `profile.py` as follows:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+new_password = request['form']['new_password']
+new_pincode = request['form']['pincode']
+update_credentials(username, password, {'pincode': new_pincode, 'password': new_password})
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The `update_credentials` function in `authentication.py` then connects to the database and update the information accordingly:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def update_credentials(username, password, data):
+    # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
+    with sqlite3.connect(database) as c:
+        object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
+        if "pincode" not in data:
+            data["pincode"] = object[2]
+        c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
+        c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
+    return "Password Updated Successfully"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+## Gestures
+
+### Getting training sequence and correlation of a sequence
+
+A gesture sequence consists of a sequence of acceleration measurements.
+
+Recognizing a gesture consits of two parts. The first one is training the default acceleration sequence against
+which each gesture will be compared. We train one such sequence for each direction, up, down, left, right as described
+in section 4.5 of this report, in the ESP side of the gestures functionality. The second one is checking the sequence entered
+against all the default acceleration sequences for each gestures by computing their correlation.
+
+The server receives any acceleration sequence as a string of accelerations separated by commas. 
+It removes the trailing comma at the end, and then splits at the commas, reverses the list, because the incoming 
+array is in reverse of the actual measurement sequence, and then joins the reversed list with commas.
+
+In order for the server to distinguish between when it is receiving an acceleration training sequence, or an acceleration sequence it has to compare with we use two different POST requests.
+
+When we pass the sequence to train,  the request has the following parameters: training, username, and accel_sequence.
+
+When we pass the sequence to compute the correlation, the request has the following parameters: check, direction, and accel_sequence.
+
+When the server receives a request with the training parameter, it adds the acceleration sequence to the database. First I delete a sequence from that database for the same direction and then I update it with the new sequence.
+ 
+When the server receives a request with the check parameter, it selects from the gestures databes the default acceleration sequence for the direction passed in the post request. Then it computes the correlation of the passed in sequence with respect to
+the default sequence.
+
+To compute the acceleration, we use the functions implemented in the regular exercises.
+
+### Finding gesture from correlations
+
+Once the correlation of a sequence against all the default gestures has been calculated, the esp sends a post request
+to another server file, get_gesture.py, which finds the maximum correlation, and if that correlation is greater than a threshold of
+0.3, it returns the corresponding gesture.
+
+
+ESP Side
+===============================================================================
+
+## Password Chaining
+
+## Card Reader
+
+We have connected the RFID such that its SDA pin is connected to pin 34 and its RST pin is connected to pin 20.
+
+To communicate RFID we use the library MFRC522.h.
+
+First we create an mfrc522 class that handles the communication with the RFID.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+MFRC522 mfrc522(SS_PIN, RST_PIN);
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once a card has been read, we iterate over its userid tag to check that it is the same as the uid of one of the allowed cards, in the following way.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+char cardcontent[1000] = "";
+byte letter;
+for (byte i = 0; i < mfrc522.uid.size; i++) 
+{
+    if(mfrc522.uid.uidByte[i] < 0x10){
+    strcat(cardcontent, " 0");
+    }
+    else{
+    strcat(cardcontent, " ");
+    }
+    char prefix[200]="";
+    sprintf(prefix, "%02X", mfrc522.uid.uidByte[i]);
+    strcat(cardcontent, prefix);
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We first create a cardcontent variable to keep the userid of the card that was scanned.
+
+We look at every byte of the user id which is in hex, and then we sprintf each byte in hex representation to a string, which we then add to the end of cardcontent. Depending on how large the byte is wes either add a 0 infront of its string representation or not.
+
+Depending on whether the the resulting string after reading the card contents matches the stored user id, we proceed to opening the door or not.
+
+
+## Pin Input
+
+## Speech Input
+
+## Gestures Input
+
+### Finding the "default" movement accelerations
+
+To get the default acceleration sequence against which we will compute the correlation we do the following.
+
+First of all we sample the x, y, z acceleration every 30 milliseconds.
+
+Then we have connected a button to pin 45 that is a classy button as implemented in our regular exercise.
+
+A long press of the button starts the recording of the acceleration data. A short press ends the recording and sends the sequence to the server to be stored on a database.
+
+The way we start collecting data is the following. When we detect a long press we set a variable called measure to true.
+
+If measure is true, we add acceleration data to an array called measurements.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+if(measure){
+    char measurement[10]="";
+    sprintf(measurement, "%4.2f,", x);
+    strcat(str_measurements, measurement);
+    measurements[iter]=x;
+    iter+=1;
+  }
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If short press, we stop measuring, do post request and reset measurements to empty.
+
+In the json body each time we specify a different direction we change the direction part of the request as mentioned in the code snippet below.
+
+Then we do the post request.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ if (input == 1){
+    measure = false;
+    // manually change direction for each direction I try to learn
+    sprintf(json_body, "training=true&direction=right&accel_sequence=");
+    strcat(json_body, str_measurements);
+    // Doing post request here
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### Capturing an esp movement
+
+To capture a movement with the esp we do the following. We have an array called left_sequence, right_sequence, ...
+That has the length of the default sequence stored in the database for each movement.
+
+We update each of these arrays in a way similar to the running average example. Everytime we sample a 
+new acceleration measurement, we add it to the front of the array, and remove the last element of the array.
+
+When we press a short click we send the current state of each sequence to the server to compute the correlation of each direction gesture with the inputed sequence. More specifically, we send a separate post request for each direction, and get the correlation of the stored sequence with respect to the default sequence.
+
+
+## Servo
+
+The servo is connected to pin 21.
+
+The purpose of the servo is to open and close the door as demonstrated in the video in this google drive.
+
+The servo operation is handled by the operate_door function.
+
+If the door is open and the button has been pressed to close to board, we rotate the servo as shown in the code below, by gradually changing its position, and then set the door to be closed.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+for (pos = pos_max; pos >= pos_min; pos -= 1) { // goes from 180 degrees to 0 degrees
+    ledcWrite(pwm_channel, pos);    // tell servo to go to position in variable 'pos'
+    delay(50);             // waits 15ms for the servo to reach the position
+}
+doorOpen = !doorOpen;
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+If the door is closed and the rfid authorizes access, door gradually opens, by doing the opposite from the above code, instead of pos-=1, we do pos+=1.
+
+
+Weekly Deliverable Milestones
+===============================================================================
+
+## Week 1
+
+### First iteration of server
+
+![First iteration server](https://youtu.be/Vtu43ydxB4s)
+
+### Text input pincode
+![Text input](https://www.youtube.com/watch?v=d-Blaw34OjQ&ab_channel=DimitrisKriezis)
+
+### Working with RFID scanner
+![Initial work with RFID scanner](https://www.youtube.com/watch?v=Ki-vk1FPjBA&ab_channel=DimitrisKriezis)
+
+## Week 2
+
+### Opening the door using card and text
+
+![Door Opening Demo](https://youtu.be/OUEOrZ9ioXI)
+
+
+## Week 3
+
+### Admin Page and changing access
+
+![Admin Page](https://youtu.be/h_23NuvBdao)
+
+## Week 4
+
+### Working with Sessions
+![Sessions](https://youtu.be/0YVakYsD4uI)
+
+
+Team Members
+===============================================================================
+
+* Demetrios Kriezis
+* Hayford Akomeah
+* Kasra Mazaheri
+* Muhender Raj Rajvee
+* Vlada Petrusenko
+
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js" charset="utf-8"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js?" charset="utf-8"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>

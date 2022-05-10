@@ -27,11 +27,11 @@ private:
     bool toClose = false;
     uint8_t buttonPin = 45;
     bool buttonPressed = false;
-    char authorizedCard[1000] = "63 E1 B3 31";
+    char authorizedCard[100] = "63 E1 B3 31";
 
 public:
     bool accessAuthorized = false;
-    char newcard[1000] = "";
+    char newcard[100] = "";
     void setup()
     {
         mfrc522 = MFRC522(34, RST_PIN);
@@ -44,16 +44,16 @@ public:
         digitalWrite(RED_LED, 1);
         digitalWrite(BLUE_LED, 1);
         digitalWrite(GREEN_LED, 1);
-        Serial.println("Approximate your card to the reader...");
-        Serial.println();
+        Serial.println("Approximate your card to the reader...\n");
     }
 
     void loop()
-    {
+    { 
         manage_close_button();
         // Look for new cards
         if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial())
         {
+            Serial.println("ABOUT TO READ A NEW CARD");
             read_card();
         }
     }
@@ -86,7 +86,7 @@ private:
         // Show UID on serial monitor
         Serial.print("UID tag :");
         String content = "";
-        char cardcontent[1000] = "";
+        char cardcontent[100] = "";
         byte letter;
         for (byte i = 0; i < mfrc522.uid.size; i++)
         {
@@ -112,23 +112,23 @@ private:
         memcpy(newcard, &cardcontent[1], strlen(cardcontent) - 1);
         Serial.println(newcard);
 
-        if (!strcmp(newcard, authorizedCard))
-        {
-            Serial.println("Authorized access");
-            Serial.println();
-            digitalWrite(GREEN_LED, 0);
-            accessAuthorized = true;
-            delay(1000);
-            digitalWrite(GREEN_LED, 1);
-        }
+        // if (!strcmp(newcard, authorizedCard))
+        // {
+        //     Serial.println("Authorized access");
+        //     Serial.println();
+        //     digitalWrite(GREEN_LED, 0);
+        //     accessAuthorized = true;
+        //     delay(1000);
+        //     digitalWrite(GREEN_LED, 1);
+        // }
 
-        else
-        {
-            Serial.println(" Access denied");
-            digitalWrite(RED_LED, 0);
-            delay(3000);
-            digitalWrite(RED_LED, 1);
-        }
+        // else
+        // {
+        //     Serial.println(" Access denied");
+        //     digitalWrite(RED_LED, 0);
+        //     delay(3000);
+        //     digitalWrite(RED_LED, 1);
+        // }
     }
 };
 

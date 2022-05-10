@@ -11,6 +11,7 @@
 #include "door.h"
 #include "multiple_password.h"
 #include "speech_to_text.h"
+#include "gestures.h"
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
@@ -61,6 +62,7 @@ CardScanner scanner;
 Door door;
 MultiplePassword multipass;
 SpeechToText speechToText;
+Gestures gestures;
 
 // some suggested variables you can use or delete:
 
@@ -68,8 +70,10 @@ enum Stage
 {
   LOCKED,
   TAP,
-  TEXT,
   PIN,
+  TEXT,
+  SPEECH,
+  GESTURE,
   UNLOCKED
 };
 
@@ -89,7 +93,7 @@ const double BASELINE = 11.7;
 const float ZOOM = 9.81; // for display (converts readings into m/s^2)...used for visualizing only
 int global_steps = 0;
 uint8_t LCD_PWM = 0, LCD_CONTROL = 21;
-char* username;
+char username[100];
 
 void setup()
 {
@@ -170,69 +174,80 @@ void setup()
   scanner.setup();
   door.setup();
   speechToText.setup();
+  multipass.setup();
+  gestures.setup();
 
   textInput = TextInputProcessor(BUTTON1);
   pinInput = PinInputProcessor(BUTTON1);
   pinMode(LCD_CONTROL, OUTPUT);
 }
 
-void loop()
-{
-  // CALL char * phrase = speechToText.run();
-  // get IMU information:
-  // imu.readAccelData(imu.accelCount);
-
-  // float acc_mag = sqrt(x * x + y * y + z * z);
-  // float avg_acc_mag = 1.0 / 3.0 * (acc_mag + old_acc_mag + older_acc_mag);
-  // older_acc_mag = old_acc_mag;
-  // old_acc_mag = acc_mag;
-  // char sss[100];
-  // sprintf(sss, "X:%f", acc_mag);
-  // Serial.println(sss);
-
-  // get button readings:
-
+void loop() {
   security_system_fsm();
   update_lcd();
 
-  while (millis() - primary_timer < LOOP_PERIOD)
-    ; // wait for primary timer to increment
+  while (millis() - primary_timer < LOOP_PERIOD); // wait for primary timer to increment
   primary_timer = millis();
 }
 
-void security_system_fsm()
-{
-  switch (state)
-  {
-  case LOCKED:
+void security_system_fsm() {
+  switch (state) {
+  case LOCKED: {
     state = TAP;
     sprintf(output, "LOCKED");
     textInput = TextInputProcessor(BUTTON1);
     pinInput = PinInputProcessor(BUTTON1);
+    }
     break;
 
-  case TAP: // Tap Card
+  case TAP: {// Tap Card
+    sprintf(output, "Please Tap Card"); 
+    //scanner.newcard[0]='\0';
+    //delay(3000);
     scanner.loop();
-    sprintf(output, "Please Tap Card");
-    if (scanner.newcard[0] != '\0')
-    {
-      Serial.printf("Id tapped: %s\n", scanner.newcard);
-      multipass.post_request_authentification(scanner.newcard);
-      Serial.printf("Username: %s\n", multipass.get_username());
-      username = multipass.get_username();
-    }
-    multipass.set_auth_method(AUTHMETHODS); //leave for later
-    multipass.post_request_authentification(); //leave for later
-    if (scanner.accessAuthorized)
-    {
-      Serial.println("access granted");
-      scanner.reset();
+    //sprintf(scanner.newcard, "73 25 A1 31"); // comment this line out  
+    //scanner.newcard = "73 25 A1 31"; // hard coding for now
+    if (scanner.newcard[0] != '\0') {
+//      Serial.printf("Id tapped: %s\n", scanner.newcard);
+//      multipass.get_username(scanner.newcard, username);
+//      Serial.printf("Username: %s\n", username);
+      multipass.get_username(scanner.newcard, username);
+      Serial.printf("Username: %s\n", username);
+
+      //sprintf(username, "hayford");
+//      Serial.printf("k%sk", username);
+      //username = "hayford";
       state = PIN;
+      if (username[0] != '\0') { // username is not empty
+        if (! multipass.check_access_by_username(username, 78)) {
+          sprintf(output, "Access Denied, \n%s", username);
+          state = LOCKED;
+          break;
+        }
+        
+        Serial.println("ABOUT TO GET AUTH METHODS!!!");
+        multipass.get_auth_methods(username);
+        // if (scanner.accessAuthorized) {
+        //   Serial.println("access granted");
+        //   scanner.reset();
+        //   state = PIN;
+        // }
+        Serial.println("Going to pin");
+        scanner.reset();
+      }
+    }
     }
     break;
-  case PIN: // Enter text with imu
+  case PIN:{ // Enter text with imu
+    if (! multipass.is_pincode_needed) {
+      state = SPEECH;
+      break;
+    }
     // Read imu data
     int16_t data[3];
+    //output[0] = '\0';
+    //sprintf(output, "Enter your PIN"); 
+    //delay(1000); 
     imu.readAccelData(data); // readGyroData(data);
     float x, y, z;
     x = ZOOM * data[0] * imu.aRes;
@@ -242,6 +257,8 @@ void security_system_fsm()
     // Update textInput
     Serial.println(x);
     pinInput.update(x);
+    char prev_output[100];
+    strcpy(prev_output, output);
     if (pinInput.isValid())
     {
       sprintf(output, "%s     ", pinInput.getText());
@@ -258,50 +275,91 @@ void security_system_fsm()
 
     // char lower[100];
     // to_lower(textInput.getCurrentText(), lower);
-    multipass.set_auth_method(PINCODE);
-    multipass.post_request_authentification(pinInput.getCurrentText(), username);
-    if (multipass.is_auth_valid)
-    {
-      state = TEXT;
-      door.open_door();
+    // multipass.set_auth_method(PINCODE);
+    if (strcmp(prev_output, output) != 0) {
+    bool result = multipass.authenticate_by_pincode(username, pinInput.getCurrentText());
+    if (result) {
+      state = SPEECH;
+    }
+    }
     }
     break;
 
-  case TEXT: // Enter text with imu
-    // Read imu data
-    imu.readAccelData(data); // readGyroData(data);
-    x = ZOOM * data[0] * imu.aRes;
-    y = ZOOM * data[1] * imu.aRes;
-    z = ZOOM * data[2] * imu.aRes;
-
-    // Update textInput
-    Serial.println(x);
-    textInput.update(x);
-    if (textInput.isValid())
-    {
-      sprintf(output, "%s     ", textInput.getText());
+//  case TEXT: { // Enter text with imu
+//    if (! multipass.is_password_needed) {
+//      state = SPEECH;
+//      break;
+//    }
+//    // Read imu data
+//    int16_t data[3];
+//    imu.readAccelData(data); // readGyroData(data);
+//    x = ZOOM * data[0] * imu.aRes;
+//    y = ZOOM * data[1] * imu.aRes;
+//    z = ZOOM * data[2] * imu.aRes;
+//
+//    // Update textInput
+//    Serial.println(x);
+//    textInput.update(x);
+//    char prev_output[100];
+//    strcpy(prev_output, output);
+//    if (textInput.isValid())
+//    {
+//      sprintf(output, "%s     ", textInput.getText());
+//    }
+//    else
+//    {
+//      sprintf(output, "%s     ", textInput.getCurrentText());
+//    }
+//
+//    Serial.println(textInput.isValid());
+//    Serial.println(textInput.getCurrentText());
+//
+//    // If the text is a hardcoded "enter", unlock the door
+//
+//    // char lower[100];
+//    // to_lower(textInput.getCurrentText(), lower);
+//    if (strcmp(prev_output, output) != 0) {
+//    char lower[100];
+//    to_lower(textInput.getCurrentText(), lower);
+//    bool result = multipass.authenticate_by_password(username, lower);
+//    if (result) {
+//      state = SPEECH;
+//      door.open_door();
+//    }
+//    }
+//    }
+//    break;
+  case SPEECH: {
+    if (! multipass.is_phrase_needed) {
+      state = GESTURE;
+      break;
     }
-    else
-    {
-      sprintf(output, "%s     ", textInput.getCurrentText());
-    }
 
-    Serial.println(textInput.isValid());
-    Serial.println(textInput.getCurrentText());
+    char word_out[50];
+    speechToText.run(word_out);
+    char word_out_lower[50];
+    to_lower(word_out, word_out_lower);
+    word_out_lower[strlen(word_out_lower)-1] = '\0';
+    bool result = multipass.authenticate_by_phrase(username, word_out_lower + 1);
 
-    // If the text is a hardcoded "enter", unlock the door
-
-    // char lower[100];
-    // to_lower(textInput.getCurrentText(), lower);
-
-    if (strcmp(textInput.getCurrentText(), "ENTER") == 0)
-    {
+    if (result) {
+      state = GESTURE;
+      // Remove following lines
       state = UNLOCKED;
       door.open_door();
     }
+    }  
     break;
 
-  case UNLOCKED:
+  case GESTURE:
+    if (! multipass.is_gesture_needed) {
+      state = UNLOCKED;  
+    }
+    gestures.loop();
+
+    break;
+
+  case UNLOCKED: {
     // If button 2 is pressed, lock the door
     Serial.println("unlocked");
     sprintf(output, "unlocked");
@@ -311,6 +369,7 @@ void security_system_fsm()
       Serial.println("locking");
       state = LOCKED;
       door.close_door();
+    }
     }
     break;
   }
