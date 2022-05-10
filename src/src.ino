@@ -183,7 +183,7 @@ void setup()
     ESP.restart(); // restart the ESP (proper way)
   }
 
-  sprintf(ALPHANUMERICS, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+  sprintf(ALPHANUMERICS, "abcdefghijklmnopqrstuvwxyz0123456789");
   sprintf(NUMERICS, "0123456789");
 
   scanner.setup();
