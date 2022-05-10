@@ -37,8 +37,8 @@ uint32_t step_timer = 0;
 const int RESPONSE_TIMEOUT = 6000; //ms to wait for response from host
 const int QUERY_PERIOD = 1000; //ms to wait between posting step
 
-const uint16_t IN_BUFFER_SIZE = 10000; //size of buffer to hold HTTP request
-const uint16_t OUT_BUFFER_SIZE = 10000; //size of buffer to hold HTTP response
+const uint16_t IN_BUFFER_SIZE = 5000; //size of buffer to hold HTTP request
+const uint16_t OUT_BUFFER_SIZE = 2000; //size of buffer to hold HTTP response
 char post_request_buffer[IN_BUFFER_SIZE]; //char array buffer to hold HTTP request
 char post_response_buffer[OUT_BUFFER_SIZE]; //char array buffer to hold HTTP response
 
@@ -46,7 +46,7 @@ float measurements[5000];
 char str_measurements[6000] = "";
 int iter = 0;
 bool measure;
-char json_body[6000] = "";
+char json_body[5000] = "";
 float left_sequence[2000];
 float right_sequence[2000];
 float up_sequence[2000];
@@ -342,7 +342,7 @@ void averaging_filter(float input, float* stored_values, int array_size) {
     }
     stored_values[0]=input;
 }
-char dir_measurements[10000] = "";
+char dir_measurements[5000] = "";
 void check_gesture(int array_size, float* dir_sequence, char* direction, char* response){
     memset(dir_measurements, 0, sizeof(dir_measurements));
     for (int i = 0; i<array_size; ++i){
