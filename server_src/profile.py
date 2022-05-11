@@ -25,13 +25,15 @@ def request_handler(request):
         new_password = request['form']['new_password']
         new_pincode = request['form']['pincode']
         new_phrase = request['form']['voice_phrase']
-        update_credentials(username, password, {'pincode': new_pincode, 'password': new_password, 'voice_phrase': new_phrase})
+        new_gesture = request['form']['gesture']
+        update_credentials(username, password, {'pincode': new_pincode, 'password': new_password, 'voice_phrase': new_phrase, 'gesture': new_gesture})
 
     data = get_credentials(username)
 
     password = data[1]
     pincode = data[2]
     voice_phrase = data[3]
+    gesture = data[6]
     
     return f'''<!DOCTYPE html>
         <html>
@@ -45,6 +47,7 @@ def request_handler(request):
                 <li> Password: {password}</li>
                 <li> Pincode: {pincode}</li>
                 <li> Voice Phrase: {voice_phrase}</li>
+                <li> Gesture Combinations: {gesture}</li>
             </div>
             <h3> If you want to disable a method of authentication, leave it blank. </h3>
             <div>
@@ -57,6 +60,8 @@ def request_handler(request):
                     <input type="password" id="pincode" name="pincode"><br>
                     <label for="VoicePhrase"> Voice Phrase: </label><br>
                     <input type="password" id="voice_phrase" name="voice_phrase"><br>
+                    <label for="gesture"> Gesture Combination: </label><br>
+                    <input type="password" id="gesture" name="gesture"><br>
                     <input type="submit" value="Update" name="update">
                     <script>
                         document.getElementById("username").value = "{username}";

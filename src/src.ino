@@ -246,6 +246,8 @@ void security_system_fsm() {
       if (username[0] != '\0') { // username is not empty
         if (! multipass.check_access_by_username(username, 78)) {
           sprintf(output, "Access Denied, \n%s", username);
+          scanner.reset();
+          transition_timer = millis();
           state = LOCKED;
           break;
         }

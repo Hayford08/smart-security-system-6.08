@@ -134,12 +134,14 @@ def authenticate_pincode(username, pincode): # Given username and pincode, check
 
 def authenticate_voice_phrase(username, voice_phrase): # Given username and voice phrase, checks whether the credentials match
 
+def authenticate_gesture(username, gesture): # Given username and gesture, checks whether the credentials match
+
 def get_credentials(username): # Retrieves all credentials of the user (including password, pincode, etc.)
 
 def retrieve_username(card_id): # Given a card id, returns the username of the user with that card id. Returns None if the card id is not recognized.
 
 def get_authentication_methods(username): # Given a username, returns the list of enabled authentication method of that user in the following format:
-# "password=<True/False>\npincode=<True/False>\nv..."
+# "password=<True/False>&pincode=<True/False>&v..."
 
 def checkAccess(username, door_id): # Given a door id and a username, checks whether the given user has access to the given door
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

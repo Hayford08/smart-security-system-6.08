@@ -49,20 +49,23 @@ def get_authentication_methods(username):
 
 def checkAccess(username, door_id):
     with sqlite3.connect(door_access_db) as c:
-        c.execute("""SELECT * FROM door_user_table WHERE username = ? AND door_id = ?""", (username, door_id)).fetchone() != None
+        return c.execute("""SELECT * FROM door_user_table WHERE username = ? AND door_id = ?""", (username, door_id)).fetchone() != None
         
 
 def update_credentials(username, password, data):
     # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
     with sqlite3.connect(database) as c:
         object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
-        if "pincode" not in data:
+        if data['pincode'] == "":
             data["pincode"] = object[2]
-        if "voice_phrase" not in data:
+        if data['voice_phrase'] == "":
             data["voice_phrase"] = object[3]
+        if data['gesture'] == "":
+            data["gesture"] = object[6]
         c.execute("""UPDATE users SET voice_phrase = ? WHERE username = ? AND password = ?""", (data['voice_phrase'], username, password)).fetchone()
         c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (data['pincode'], username, password)).fetchone()
         c.execute("""UPDATE users SET password = ? WHERE username = ? AND password = ?""", (data['password'], username, password)).fetchone()
+        c.execute("""UPDATE users SET gesture_password = ? WHERE username = ? AND password = ?""", (data['gesture'], username, password)).fetchone()
     return "Password Updated Successfully"
 
 def request_handler(request):
@@ -73,11 +76,12 @@ def request_handler(request):
     #       ?getUsername&card_id=<card_id> => returns the username of the user
 
     #       ?getAuthenticationMethods&username=<username> => returns the list of authentication methods the user is using
-    #                                                           as: "password=<True/False>\npincode=<True/False>\n"
+    #                                                           as: "password=<True/False>&pincode=<True/False>&voice_phrase=<True/False>&gesture=<True/False>"
 
     #       ?authenticate&username=<username>&password=<password> => returns true if the password matches the username
     #       ?authenticate&username=<username>&pincode=<pincode> => returns true if the pincode matches the username
     #       ?authenticate&username=<username>&voice_phrase=<voice_phrase> => returns true if the voice phrase matches the username
+    #       ?authenticate&username=<username>&gesture=<gesture> => returns true if the gesture matches the username
     #       => returns "Unsupported Request" otherwise
     if request['method'] == 'GET':
         if 'checkAccess' in request['args']:
@@ -106,6 +110,9 @@ def request_handler(request):
             elif 'voice_phrase' in request['values']:
                 voice_phrase = request['values']['voice_phrase']
                 return authenticate_voice_phrase(username, voice_phrase)
+            elif 'gesture' in request['values']:
+                gesture = request['values']['gesture']
+                return authenticate_gestures(username, gesture)
             return False
         
     if request["method"] == "POST":
