@@ -48,6 +48,8 @@ def do_post_request(username, password, message_to_display=None):
             <br>
             <br><br>
             <form method="post" action = "profile.py">
+            <input type="text" name="username" value={data["username"]} hidden/>
+            <input type="text" name="password" value={data["password"]} hidden/>
             <input type="submit" value="Change Profile", name=profile>
             </form>
             {admin_button}
@@ -67,6 +69,7 @@ def request_handler(request):
     if request["method"] == "POST" and not 'profile' in request['form']:
         # check if it is log out
         if 'logout' in request['form']:
+            # delete_user_session(user_hash)
             return login_form(delete_session=True)
         else:
             # if not user_info: # Ignore login requests when the user is already logged in

@@ -29,7 +29,11 @@ Documentation
 ===============================================================================
 
 
-## TODO: State Machine Diagrams
+## State Machine Diagrams
+
+<img src="state_diagram.png"
+     alt="State Diagram of the System"
+     style="float: left; margin-right: 10px;" />
 
 ## Block Diagrams
 
@@ -107,14 +111,16 @@ All the server APIs that are used by the ESP are handled in `server_src/authenti
 
     <li>getUsername&card_id=< card_id > => returns the username of the user</li>
 
-    <li>getAuthenticationMethods&username=< username > => returns the list of authentication methods the user is using as: "password=<True/False>\npincode=<True/False>\nvoice=<True/False>\n"</li>
+    <li>getAuthenticationMethods&username=< username > => returns the list of authentication methods the user is using as: "password=<True/False>&pincode=<True/False>&voice=<True/False>&gesture=<True/False>"</li>
 
     <li>authenticate&username=< username >&password=< password > => returns true if the password matches the username</li>
 
     <li>authenticate&username=< username >&pincode=< pincode > => returns true if the pincode matches the username</li>
 
     <li>authenticate&username=< username >&voice_phrase=< voice_phrase > => returns true if the voice phrase matches the username</li>
- 
+    
+    <li>authenticate&username=< username >&gesture=< gesture > => returns true if the gesture matches the username</li>
+
     <li> => returns "Unsupported Request" otherwise</li>
 
 </ul>
