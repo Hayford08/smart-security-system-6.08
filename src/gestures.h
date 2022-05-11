@@ -53,7 +53,7 @@ private:
     float right_sequence[500];
     float up_sequence[500];
     float down_sequence[501];
-
+    char dir_measurements[3000] = "";
     char gesture_sequence[100] = "";
 
     const uint8_t BUTTON1 = 45; // pin connected to button
@@ -81,18 +81,16 @@ public:
         x = imu->accelCount[0] * imu->aRes;
         y = imu->accelCount[1] * imu->aRes;
         z = imu->accelCount[2] * imu->aRes;
-        float acc_mag = sqrt(x * x + y * y + z * z);
-        float avg_acc_mag = 1.0 / 3.0 * (acc_mag + old_acc_mag + older_acc_mag);
-        older_acc_mag = old_acc_mag;
-        old_acc_mag = acc_mag;
+        // float acc_mag = sqrt(x * x + y * y + z * z);
+        // float avg_acc_mag = 1.0 / 3.0 * (acc_mag + old_acc_mag + older_acc_mag);
+        // older_acc_mag = old_acc_mag;
+        // old_acc_mag = acc_mag;
         char movement[100] = "";
 
         averaging_filter(x, left_sequence, 320);    
         averaging_filter(x, right_sequence, 362);
         averaging_filter(y, up_sequence, 463);
         averaging_filter(y, down_sequence, 500);
-        // averaging_filter(y, up_sequence);
-        // averaging_filter(y, down_sequence);
         
         int input = button1.update();
         int input2 = button2.update();
@@ -205,8 +203,6 @@ public:
         }
         stored_values[0]=input;
     }
-
-    char dir_measurements[3000] = "";
 
     void check_gesture(int array_size, float* dir_sequence, char* direction, char* response){
         memset(dir_measurements, 0, sizeof(dir_measurements));

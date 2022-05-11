@@ -16,7 +16,7 @@
 
 TFT_eSPI tft = TFT_eSPI(); // Invoke library, pins defined in User_Setup.h
 
-char network[] = "EECS-Lounges";
+char network[] = "MIT";
 char password[] = "";
 /* Having network issues since there are 50 MIT and MIT_GUEST networks?. Do the following:
     When the access points are printed out at the start, find a particularly strong one that you're targeting.
@@ -204,7 +204,9 @@ void loop() {
   update_lcd();
   security_system_fsm();
 
-  while (millis() - primary_timer < LOOP_PERIOD); // wait for primary timer to increment
+  if (state != GESTURE) {
+    while (millis() - primary_timer < LOOP_PERIOD); // wait for primary timer to increment
+  }
   primary_timer = millis();
 }
 
@@ -268,8 +270,8 @@ void security_system_fsm() {
     }
     break;
   case PIN:{ // Enter text with imu
-    //state = GESTURE;
-    //break;
+    // state = GESTURE;
+    // break;
     if (! multipass.is_pincode_needed) {
       state = TEXT;
       break;
@@ -386,8 +388,8 @@ void security_system_fsm() {
       if (result) {
         state = GESTURE;
         // Remove following lines
-        state = UNLOCKED;
-        door.open_door();
+        // state = UNLOCKED;
+        // door.open_door();
         transition_timer = millis();
       }
     }

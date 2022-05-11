@@ -7,7 +7,7 @@ def setup():
     This is the function to create the default usernames, passwords, pincodes, voice_phrase, and is_admin in the database
     """
     values = [('dkriezis', '8130070', '542071', 'banana', 0, 'E0 16 99 1B', 'left,right,up'), ('hayford', '5317558', '798333', 'orange', 0, '73 25 A1 31', 'left,up,down'), 
-              ("Admin", "Admin", "470236", 'puppy', 1, 'AC EC 64 68', 'left'),  ('vladap', '9466123', '670426', 'rug', 0, '63 E1 B3 31', 'left,right,left'), 
+              ("Admin", "Admin", "470236", 'puppy', 1, 'AC EC 64 68', 'left'),  ('vladap', '9466123', '670426', 'rug', 0, '63 E1 B3 31', 'left,right,up'), 
               ('muhender', '4616833', '057548', 'north', 0, 'D3 CC 5F 6D', 'up,down,left'), ('mazaheri','8150042', '113312', 'cat', 0, '06 A4 40 B7', 'right,down,up')]
     with sqlite3.connect(database) as c:
         c.execute("""DROP TABLE users""")
@@ -126,4 +126,3 @@ def request_handler(request):
 #         c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (object[], username, password)).fetchone()
 #     return "Password Updated Successfully"
 
-#setup()

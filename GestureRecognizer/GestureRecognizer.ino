@@ -198,7 +198,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-    
+  
   imu.readAccelData(imu.accelCount);  
   float x, y, z;
   x = imu.accelCount[0] * imu.aRes;
