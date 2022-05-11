@@ -134,4 +134,4 @@ def request_handler(request):
 #         object = c.execute("""SELECT * FROM users WHERE username = ? """, (username,)).fetchone()
 #         c.execute("""UPDATE users SET pincode = ? WHERE username = ? AND password = ?""", (object[], username, password)).fetchone()
 #     return "Password Updated Successfully"
-
+# setup()
