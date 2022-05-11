@@ -56,6 +56,8 @@ def update_credentials(username, password, data):
     # data is a dictionary. For now just write data = {"pincode": actual_pincode_value}
     with sqlite3.connect(database) as c:
         object = c.execute("""SELECT * FROM users WHERE username = ? AND password = ?""", (username, password)).fetchone()
+        if data['password'] == "":
+            data["password"] = object[1]
         if data['pincode'] == "":
             data["pincode"] = object[2]
         if data['voice_phrase'] == "":
