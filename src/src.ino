@@ -234,6 +234,7 @@ void security_system_fsm() {
     //sprintf(scanner.newcard, "73 25 A1 31"); // comment this line out  
     // scanner.newcard = "73 25 A1 31"; // hard coding for now
     if (scanner.newcard[0] != '\0') {
+      scanner.newcard[11] = '\0';
 //      Serial.printf("Id tapped: %s\n", scanner.newcard);
 //      multipass.get_username(scanner.newcard, username);
 //      Serial.printf("Username: %s\n", username);
@@ -248,6 +249,7 @@ void security_system_fsm() {
           sprintf(output, "Access Denied, \n%s", username);
           scanner.reset();
           transition_timer = millis();
+          strcpy(username, "");
           state = LOCKED;
           break;
         }
