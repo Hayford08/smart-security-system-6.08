@@ -333,7 +333,48 @@ to another server file, get_gesture.py, which finds the maximum correlation, and
 ESP Side
 ===============================================================================
 
-## TODO: Password Chaining
+## Password Chaining
+
+The ESP works by first checking the card ID of the card by using an RFID scanner, and check if the person has access to the door. 
+If the person doesn't have access, it goes back to being locked. Otherwise, it moves to the next stage. This process is managed by the 
+MultiplePassword class, which makes different GET requests to each of the endpoints of the server API. One such method is:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+bool authenticate_by_pincode(char *username, char* pincode) {
+    char request_buffer[IN_BUFFER_SIZE];          // char array buffer to hold HTTP request
+    char response_buffer[OUT_BUFFER_SIZE];        // char array buffer to hold HTTP response
+    char body[200];                               // for body
+
+    sprintf(body, "?authenticate&type=pincode&username=%s&pincode=%s", username, pincode);
+    request_buffer[0] = '\0';
+    sprintf(request_buffer, "GET https://608dev-2.net/sandbox/sc/team26/server_src/authentication.py%s HTTP/1.1\r\n", body);
+    strcat(request_buffer, "Host: 608dev-2.net\r\n\r\n");
+    response_buffer[0] = '\0';
+    do_http_request("608dev-2.net", request_buffer, response_buffer, OUT_BUFFER_SIZE, RESPONSE_TIMEOUT, true);
+    response_buffer[strlen(response_buffer)-1]='\0';
+    if(strcmp(response_buffer, "True") == 0)
+        pincode_authenticated = true; // somehow
+    return pincode_authenticated;
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The program moves sequentially through pincode, password, voice phrase, and gestures, as a state machine. The states are maintained by an enum
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+enum Stage
+{
+  LOCKED,
+  TAP,
+  PIN,
+  TEXT,
+  SPEECH,
+  GESTURE,
+  UNLOCKED
+};
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If these passwords are entered correctly, the door is unlocked and the state machine moves to the UNLOCKED state. When the button 2 is pressed,
+the machine moves back to the LOCKED state.
 
 ## Card Reader
 
@@ -370,7 +411,7 @@ We first create a cardcontent variable to keep the userid of the card that was s
 
 We look at every byte of the user id which is in hex, and then we sprintf each byte in hex representation to a string, which we then add to the end of cardcontent. Depending on how large the byte is wes either add a 0 infront of its string representation or not.
 
-Depending on whether the the resulting string after reading the card contents matches the stored user id, we proceed to opening the door or not.
+Depending on whether the the resulting string after reading the card contents matches the stored user id, we proceed to moving to the next stage or not.
 
 
 ## Input Processor
